@@ -48,7 +48,7 @@
                 </a>
                 <a href="#chatbot" class="nav-item" data-view="chatbot">
                     <i class="fa-solid fa-comments"></i>
-                    <span>AI Chatbot</span>
+                    <span>AI Chatbot <small style="color:var(--cyan-neon);font-size:9px;display:block;letter-spacing:.06em;">HUD OVERLAY</small></span>
                 </a>
                 <a href="#simulator" class="nav-item" data-view="simulator">
                     <i class="fa-solid fa-sliders"></i>
@@ -118,7 +118,7 @@
                         <i class="fa-solid fa-microchip"></i>
                         <span>Launch Simulation</span>
                     </button>
-                    <button class="btn-header-action" data-navigate="chatbot">
+                    <button class="btn-header-action" id="btn-header-assistant">
                         <i class="fa-solid fa-terminal"></i>
                         <span>Query Assistant</span>
                     </button>
@@ -339,74 +339,7 @@
             </section>
 
             <!-- ==========================================================================
-                 VIEW 2: AI CHATBOT INTERFACE
-                 ========================================================================== -->
-            <section id="view-chatbot" class="view-section">
-                <div class="section-hero">
-                    <div>
-                        <h2><i class="fa-solid fa-brain text-cyan"></i> CITYBRAIN AI Assistant</h2>
-                        <p>Natural language queries for live traffic forecasts, what-if scenarios, and smart city intelligence.</p>
-                    </div>
-                    <div class="d-flex align-center gap-2">
-                        <span id="llm-mode-badge" class="badge-offline">Offline Rule Engine</span>
-                        <button id="btn-open-llm-settings" class="btn-cyber-secondary">
-                            <i class="fa-solid fa-gear"></i> API Endpoint
-                        </button>
-                    </div>
-                </div>
-
-                <div class="glass-panel chatbot-wrapper">
-                    <!-- Chat Header -->
-                    <div class="chat-header-bar">
-                        <div class="bot-profile">
-                            <div class="bot-avatar-box">
-                                <i class="fa-solid fa-microchip"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-white">CITYBRAIN AI ASSISTANT</h4>
-                                <span class="bot-status-desc">
-                                    <span class="pulse-dot"></span> Chennai Metropolitan Neural Core Active
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="chat-actions">
-                            <button id="btn-clear-chat" class="btn-cyber-secondary" title="Clear Chat History">
-                                <i class="fa-solid fa-trash-can"></i> Clear Chat
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Messages Scroll Area -->
-                    <div id="chat-messages-container" class="chat-messages">
-                        <!-- Messages dynamically rendered by chatbot.js -->
-                    </div>
-
-                    <!-- Suggested Query Chips -->
-                    <div class="chat-suggestions-bar">
-                        <span class="text-xs text-muted" style="align-self: center;">Suggested:</span>
-                        <button class="suggestion-chip" data-query="What is the traffic condition in Chennai?">Traffic condition?</button>
-                        <button class="suggestion-chip" data-query="Predict traffic at 6 PM">Predict traffic at 6 PM</button>
-                        <button class="suggestion-chip" data-query="What happens if population increases by 20%?">What if population +20%?</button>
-                        <button class="suggestion-chip" data-query="Which city areas have high pollution?">High pollution areas?</button>
-                        <button class="suggestion-chip" data-query="What if vehicle usage decreases by 15%?">What if vehicle usage -15%?</button>
-                        <button class="suggestion-chip" data-query="Predict tomorrow's water demand">Tomorrow's water demand?</button>
-                        <button class="suggestion-chip" data-query="How can we reduce electricity consumption?">Reduce electricity?</button>
-                    </div>
-
-                    <!-- Chat Input Field -->
-                    <div class="chat-input-area">
-                        <input type="text" id="chat-input" class="chat-input-field" placeholder="Ask CityBrain AI about traffic, pollution, water, electricity, or run what-if queries..." autocomplete="off">
-                        <button id="btn-chat-send" class="btn-chat-send">
-                            <span>TRANSMIT</span>
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ==========================================================================
-                 VIEW 3: WHAT-IF SIMULATOR
+                 VIEW 2: WHAT-IF SIMULATOR
                  ========================================================================== -->
             <section id="view-simulator" class="view-section">
                 <div class="section-hero">
@@ -975,6 +908,79 @@
             </section>
         </main>
     </div>
+
+    <!-- ==========================================================================
+         FLOATING AI CHATBOT HUD (IN FRONT OF DASHBOARD - NO SEPARATE COLUMN)
+         ========================================================================== -->
+    <div id="floating-chatbot-hud" class="floating-chatbot-hud" role="region" aria-label="CityBrain AI Assistant">
+        <!-- HUD Header Bar with Controls -->
+        <div class="chat-header-bar hud-drag-handle">
+            <div class="bot-profile">
+                <div class="bot-avatar-box">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-center gap-2">
+                        <h4 class="text-white text-xs font-heading">CITYBRAIN AI ASSISTANT</h4>
+                        <span id="llm-mode-badge" class="badge-offline">Offline Engine</span>
+                    </div>
+                    <span class="bot-status-desc">
+                        <span class="pulse-dot"></span> Chennai Metropolitan Neural Core Active
+                    </span>
+                </div>
+            </div>
+
+            <div class="chat-actions">
+                <button id="btn-open-llm-settings" class="btn-hud-icon" title="API Endpoint Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button id="btn-clear-chat" class="btn-hud-icon" title="Clear Chat History">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <button id="btn-hud-expand" class="btn-hud-icon" title="Maximize / Restore">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+                <button id="btn-hud-minimize" class="btn-hud-icon" title="Minimize to Floating Orb">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages Scroll Area -->
+        <div id="chat-messages-container" class="chat-messages">
+            <!-- Messages dynamically rendered by chatbot.js -->
+        </div>
+
+        <!-- Suggested Query Chips -->
+        <div class="chat-suggestions-bar">
+            <span class="text-xs text-muted" style="align-self: center; white-space: nowrap;"><i class="fa-solid fa-bolt text-cyan"></i> Suggested:</span>
+            <button class="suggestion-chip" data-query="What is the traffic condition in Chennai?">Traffic condition?</button>
+            <button class="suggestion-chip" data-query="Predict traffic at 6 PM">Predict traffic at 6 PM</button>
+            <button class="suggestion-chip" data-query="What happens if population increases by 20%?">What if population +20%?</button>
+            <button class="suggestion-chip" data-query="Which city areas have high pollution?">High pollution areas?</button>
+            <button class="suggestion-chip" data-query="What if vehicle usage decreases by 15%?">What if vehicle usage -15%?</button>
+            <button class="suggestion-chip" data-query="Predict tomorrow's water demand">Tomorrow's water demand?</button>
+            <button class="suggestion-chip" data-query="How can we reduce electricity consumption?">Reduce electricity?</button>
+        </div>
+
+        <!-- Chat Input Field -->
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" class="chat-input-field" placeholder="Ask CityBrain AI about traffic, pollution, water, electricity..." autocomplete="off">
+            <button id="btn-chat-send" class="btn-chat-send">
+                <span>TRANSMIT</span>
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Persistent Floating Trigger Button in front of Dashboard -->
+    <button id="floating-chat-trigger" class="floating-chat-trigger" title="Open CityBrain AI Assistant">
+        <div class="trigger-icon"><i class="fa-solid fa-brain"></i></div>
+        <div class="trigger-text">
+            <span class="trigger-title">CITYBRAIN AI</span>
+            <span class="trigger-status"><span class="pulse-dot"></span> COPILOT ONLINE</span>
+        </div>
+    </button>
 
     <!-- ==========================================================================
          CONFIGURABLE LLM MODAL (OFFLINE DEMO DEFAULT)

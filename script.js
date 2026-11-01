@@ -53,6 +53,13 @@ const CityBrainNav = {
 
     switchView(viewName) {
         if (!viewName) return;
+
+        // If user clicks "chatbot" nav item, just flash the HUD to attention instead of switching views
+        if (viewName === "chatbot") {
+            ChatHUD.show();
+            return;
+        }
+
         this.currentView = viewName;
 
         // Update active nav link
@@ -234,6 +241,133 @@ const InsightsEngine = {
                 }
             });
         });
+    }
+};
+
+// ==========================================================================
+// FLOATING CHATBOT HUD CONTROLLER
+// Controls: show/hide, minimize, maximize, drag-to-reposition
+// ==========================================================================
+const ChatHUD = {
+    hud: null,
+    trigger: null,
+    isMinimized: false,
+    isMaximized: false,
+    isDragging: false,
+    dragOffsetX: 0,
+    dragOffsetY: 0,
+
+    init() {
+        this.hud = document.getElementById("floating-chatbot-hud");
+        this.trigger = document.getElementById("floating-chat-trigger");
+        if (!this.hud) return;
+
+        // Minimize button
+        const btnMin = document.getElementById("btn-hud-minimize");
+        if (btnMin) btnMin.addEventListener("click", () => this.minimize());
+
+        // Expand / Restore toggle
+        const btnExp = document.getElementById("btn-hud-expand");
+        if (btnExp) btnExp.addEventListener("click", () => this.toggleMaximize());
+
+        // Floating trigger re-opens the HUD
+        if (this.trigger) {
+            this.trigger.addEventListener("click", () => this.show());
+        }
+
+        // Dragging via header handle
+        const handle = this.hud.querySelector(".hud-drag-handle");
+        if (handle) {
+            handle.addEventListener("mousedown", (e) => this.startDrag(e));
+            handle.addEventListener("touchstart", (e) => this.startDrag(e), { passive: true });
+        }
+        document.addEventListener("mousemove", (e) => this.onDrag(e));
+        document.addEventListener("touchmove", (e) => this.onDrag(e), { passive: false });
+        document.addEventListener("mouseup", () => this.stopDrag());
+        document.addEventListener("touchend", () => this.stopDrag());
+
+        // Escape key minimizes the HUD
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !this.isMinimized) this.minimize();
+        });
+    },
+
+    show() {
+        if (!this.hud) return;
+        this.isMinimized = false;
+        this.hud.classList.remove("minimized");
+        if (this.trigger) this.trigger.classList.remove("visible");
+
+        // Attention pulse flash
+        this.hud.classList.add("hud-highlight");
+        setTimeout(() => { if (this.hud) this.hud.classList.remove("hud-highlight"); }, 1200);
+
+        // Focus the input after animation settles
+        const input = document.getElementById("chat-input");
+        if (input) setTimeout(() => input.focus(), 350);
+    },
+
+    minimize() {
+        if (!this.hud) return;
+        this.isMinimized = true;
+        this.hud.classList.add("minimized");
+        if (this.trigger) this.trigger.classList.add("visible");
+    },
+
+    toggleMaximize() {
+        if (!this.hud) return;
+        this.isMaximized = !this.isMaximized;
+        this.hud.classList.toggle("maximized", this.isMaximized);
+
+        const icon = document.querySelector("#btn-hud-expand i");
+        if (icon) {
+            icon.className = this.isMaximized ? "fa-solid fa-compress" : "fa-solid fa-expand";
+        }
+
+        // Reset manual drag offset when maximizing
+        if (this.isMaximized) {
+            this.hud.style.bottom = "24px";
+            this.hud.style.right = "28px";
+            this.hud.style.left = "";
+            this.hud.style.top = "";
+        }
+    },
+
+    startDrag(e) {
+        if (this.isMaximized) return;
+        this.isDragging = true;
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        const rect = this.hud.getBoundingClientRect();
+        this.dragOffsetX = cx - rect.left;
+        this.dragOffsetY = cy - rect.top;
+        this.hud.style.transition = "none";
+        const handle = this.hud.querySelector(".hud-drag-handle");
+        if (handle) handle.style.cursor = "grabbing";
+    },
+
+    onDrag(e) {
+        if (!this.isDragging || this.isMaximized) return;
+        if (e.cancelable) e.preventDefault();
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const margin = 8;
+        let newLeft = Math.max(margin, Math.min(cx - this.dragOffsetX, window.innerWidth - this.hud.offsetWidth - margin));
+        let newTop  = Math.max(margin, Math.min(cy - this.dragOffsetY, window.innerHeight - this.hud.offsetHeight - margin));
+
+        this.hud.style.left   = newLeft + "px";
+        this.hud.style.top    = newTop  + "px";
+        this.hud.style.right  = "auto";
+        this.hud.style.bottom = "auto";
+    },
+
+    stopDrag() {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+        if (this.hud) this.hud.style.transition = "";
+        const handle = this.hud ? this.hud.querySelector(".hud-drag-handle") : null;
+        if (handle) handle.style.cursor = "grab";
     }
 };
 
@@ -466,7 +600,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window.SimulationEngine.init();
     }
 
-    // 6. Initialize Chatbot
+    // 6. Initialize Floating Chatbot HUD
+    ChatHUD.init();
     if (window.CityBrainChatbot) {
         window.CityBrainChatbot.init();
     }
@@ -485,3 +620,4 @@ document.addEventListener("DOMContentLoaded", () => {
 // Global exports
 window.CityBrainNav = CityBrainNav;
 window.InsightsEngine = InsightsEngine;
+window.ChatHUD = ChatHUD;

@@ -235,16 +235,15 @@ const CityMapEngine = {
         const askBtn = document.getElementById("btn-ask-ai-zone");
         if (askBtn) {
             askBtn.addEventListener("click", () => {
-                if (window.CityBrainNav) {
-                    window.CityBrainNav.switchView("chatbot");
-                    setTimeout(() => {
-                        const input = document.getElementById("chat-input");
-                        if (input && window.CityBrainChatbot) {
-                            input.value = `Tell me about the conditions in ${zone.name}`;
-                            window.CityBrainChatbot.handleUserSubmit();
-                        }
-                    }, 200);
-                }
+                // Open the floating chatbot HUD and pre-fill query for this zone
+                if (window.ChatHUD) window.ChatHUD.show();
+                setTimeout(() => {
+                    const input = document.getElementById("chat-input");
+                    if (input && window.CityBrainChatbot) {
+                        input.value = `Tell me about the conditions in ${zone.name}`;
+                        window.CityBrainChatbot.handleUserSubmit();
+                    }
+                }, 400);
             });
         }
     },

@@ -877,13 +877,157 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* ==========================================================================
-   AI CHATBOT INTERFACE
+   AI CHATBOT INTERFACE (FLOATING IN FRONT OF DASHBOARD - NO SEPARATE COLUMN)
    ========================================================================== */
+.floating-chatbot-hud {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+    width: 460px;
+    height: 590px;
+    max-height: calc(100vh - 110px);
+    max-width: calc(100vw - 40px);
+    background: rgba(9, 14, 28, 0.94);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--cyan-neon);
+    border-radius: var(--radius-md);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 30px rgba(0, 240, 255, 0.22);
+    display: flex;
+    flex-direction: column;
+    z-index: 500;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, width 0.25s ease, height 0.25s ease;
+    transform-origin: bottom right;
+    overflow: hidden;
+}
+
+.floating-chatbot-hud.minimized {
+    transform: scale(0.6) translateY(60px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.floating-chatbot-hud.maximized {
+    width: 740px;
+    height: 720px;
+    max-height: calc(100vh - 90px);
+    max-width: calc(100vw - 320px);
+}
+
+.floating-chatbot-hud.hud-highlight {
+    animation: hudGlowPulse 1.2s ease;
+}
+
+@keyframes hudGlowPulse {
+    0%, 100% { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 30px rgba(0, 240, 255, 0.22); }
+    50% { box-shadow: 0 16px 54px rgba(0, 0, 0, 0.85), 0 0 55px rgba(0, 240, 255, 0.6); border-color: #ffffff; }
+}
+
+.hud-drag-handle {
+    cursor: grab;
+    user-select: none;
+}
+
+.btn-hud-icon {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-hud-icon:hover {
+    color: var(--cyan-neon);
+    border-color: var(--cyan-neon);
+    background: rgba(0, 240, 255, 0.15);
+}
+
+/* Floating Trigger Button (when minimized or for quick toggle in front of Dashboard) */
+.floating-chat-trigger {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: rgba(9, 14, 28, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--cyan-neon);
+    border-radius: 30px;
+    padding: 10px 18px 10px 12px;
+    color: #ffffff;
+    cursor: pointer;
+    z-index: 499;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 22px rgba(0, 240, 255, 0.35);
+    transition: var(--transition);
+}
+
+.floating-chat-trigger.visible {
+    display: flex;
+    animation: triggerIn 0.3s ease;
+}
+
+@keyframes triggerIn {
+    from { transform: scale(0.8) translateY(12px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.floating-chat-trigger:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 12px 38px rgba(0, 0, 0, 0.7), 0 0 32px rgba(0, 240, 255, 0.55);
+    border-color: #ffffff;
+}
+
+.trigger-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(168, 85, 247, 0.3));
+    border: 1px solid var(--cyan-neon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cyan-neon);
+    font-size: 15px;
+}
+
+.trigger-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.trigger-title {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+}
+
+.trigger-status {
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--green-neon);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
 .chatbot-wrapper {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 140px);
-    max-height: 820px;
+    height: 100%;
+    width: 100%;
 }
 
 .chat-header-bar {
@@ -1595,6 +1739,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
     }
     .view-section {
         padding: 16px;
+    }
+    .floating-chatbot-hud {
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-width: 100%;
+        height: 75vh;
+        border-radius: var(--radius-sm);
+    }
+    .floating-chatbot-hud.maximized {
+        width: auto;
+        height: 85vh;
+        max-width: 100%;
     }
 }
 
