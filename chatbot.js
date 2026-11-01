@@ -1,73 +1,280 @@
 /**
  * CITYBRAIN - AI SMART CITY SIMULATOR
- * Chatbot Intelligence Engine (chatbot.js)
- * Assistant: CITYBRAIN AI ASSISTANT
- * 
- * Modular Intent Classification, Context Awareness,
- * Regex & Keyword Entity Extraction, and Offline Autonomous Rule Engine.
- * Optional Configurable LLM API Endpoint Interface for online enhancement.
+ * Chatbot Engine v2 (chatbot.js)
+ *
+ * ► FREE AI: Google Gemini 2.0 Flash (gemini-2.0-flash)
+ *   Free tier: 1,500 requests/day · No credit card required
+ *   Get key → https://aistudio.google.com/app/apikey
+ *
+ * ► REAL-TIME STREAMING via Server-Sent Events (SSE ReadableStream)
+ * ► MULTI-TURN conversation history (full context memory)
+ * ► OFFLINE fallback if no API key provided
  */
 
 const CityBrainChatbot = {
-    // Conversation State & Context Memory
+
+    // ── Persistent Conversation History (Gemini format) ──────────────────────
+    history: [],
+
+    // ── Runtime State ─────────────────────────────────────────────────────────
+    isStreaming: false,
     context: {
         lastTopic: null,
-        lastZoneMentioned: null,
-        lastSimResult: null,
+        lastZone: null,
         interactionCount: 0
     },
 
-    // Default configuration for offline demo / optional external LLM
+    // ── Config ────────────────────────────────────────────────────────────────
     config: {
-        offlineMode: true,
-        endpoint: "",
         apiKey: "",
-        model: "gpt-4o-mini"
+        model: "gemini-2.0-flash",
+        offlineMode: true   // flips to false when valid key is saved
     },
 
-    isTyping: false,
-
-    // Initial greeting message
-    welcomeMessage: {
-        sender: "bot",
-        text: "👋 Greetings! I am the **CITYBRAIN AI ASSISTANT**, monitoring Chennai's metropolitan neural grid in real-time. You can query live traffic status, atmospheric pollution, water reserves, electricity demands, or ask me to run what-if civic simulations.\n\nTry clicking a suggested query below or ask your own question!",
-        timestamp: "Just now"
+    // ── Gemini API endpoint ───────────────────────────────────────────────────
+    get ENDPOINT() {
+        return `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:streamGenerateContent?alt=sse&key=${this.config.apiKey}`;
     },
 
+    // ── System Instruction (sent with every Gemini request) ──────────────────
+    SYSTEM_PROMPT: `You are CITYBRAIN AI ASSISTANT — an elite urban intelligence engine monitoring
+Chennai, India's smart city grid in real time.
+
+Your personality: precise, futuristic, slightly dramatic — like a mission control operator.
+Keep responses concise but rich (use bullet lists and bold text freely).
+You know everything about Chennai's traffic, pollution (AQI), water reservoirs,
+electricity grid, and urban infrastructure.
+
+Key facts you always know:
+• City: Chennai, Tamil Nadu, India — population 11.5 million (metro)
+• Traffic congestion baseline: 68% citywide, worst at T. Nagar (88%), Guindy (84%)
+• AQI baseline: 142 (Moderate). Worst: Koyambedu (175), Port (182). Best: Adyar (98)
+• Water: 985 MLD demand, 1050 MLD supply. Reservoirs: Chembarambakkam 85%, Poondi 76%
+• Electricity: 3,920 MW demand vs 4,500 MW grid cap (TANGEDCO). 13% reserve margin
+• Infrastructure health: 74/100. Worst sub-sector: Stormwater Drainage (58/100)
+
+Answer questions about the city warmly and intelligently.
+When users ask what-if scenarios, compute approximate impacts using common sense ratios.
+Always label simulation outputs as "illustrative projections" not verified forecasts.`,
+
+    // ── Welcome message ───────────────────────────────────────────────────────
+    WELCOME: "🌐 **CITYBRAIN NEURAL CORE ONLINE**\n\nI'm your AI copilot for Chennai's smart city grid. Ask me anything — traffic forecasts, pollution hotspots, water reserves, what-if simulations, or just a natural conversation.\n\n*Configure a free Gemini API key above to unlock full AI mode with streaming responses!*",
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  INITIALISE
+    // ─────────────────────────────────────────────────────────────────────────
     init() {
         this.loadConfig();
+        this.renderKeySetupUI();
         this.bindEvents();
         this.loadChatHistory();
     },
 
+    // ─────────────────────────────────────────────────────────────────────────
+    //  CONFIG
+    // ─────────────────────────────────────────────────────────────────────────
     loadConfig() {
-        const saved = window.StorageManager.load(window.StorageManager.KEYS.USER_PREFS, null);
-        if (saved && saved.llmConfig) {
-            this.config = { ...this.config, ...saved.llmConfig };
+        const saved = window.StorageManager.load("citybrain_gemini_config", null);
+        if (saved && saved.apiKey) {
+            this.config.apiKey    = saved.apiKey;
+            this.config.model     = saved.model || "gemini-2.0-flash";
+            this.config.offlineMode = false;
+        }
+        const savedHistory = window.StorageManager.load("citybrain_gemini_history", []);
+        this.history = savedHistory || [];
+    },
+
+    saveConfig(key, model) {
+        this.config.apiKey     = key;
+        this.config.model      = model || "gemini-2.0-flash";
+        this.config.offlineMode = !key;
+        window.StorageManager.save("citybrain_gemini_config", {
+            apiKey: this.config.apiKey,
+            model:  this.config.model
+        });
+        this.updateStatusBadge();
+    },
+
+    saveHistory() {
+        // Keep last 40 turns
+        const trimmed = this.history.slice(-40);
+        this.history = trimmed;
+        window.StorageManager.save("citybrain_gemini_history", trimmed);
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  KEY SETUP UI (rendered inside the HUD header area)
+    // ─────────────────────────────────────────────────────────────────────────
+    renderKeySetupUI() {
+        const panel = document.getElementById("gemini-key-panel");
+        if (!panel) return;
+
+        const hasKey = !!this.config.apiKey;
+
+        panel.innerHTML = `
+            <div class="gemini-setup-bar ${hasKey ? 'setup-connected' : 'setup-needs-key'}">
+                ${hasKey ? `
+                    <div class="setup-status connected">
+                        <span class="setup-dot"></span>
+                        <span class="setup-label">Gemini AI Connected</span>
+                        <span class="setup-model">${this.config.model}</span>
+                    </div>
+                    <button class="btn-setup-change" id="btn-change-api-key" title="Change API Key">
+                        <i class="fa-solid fa-key"></i> Change Key
+                    </button>
+                ` : `
+                    <div class="setup-status needs-key">
+                        <i class="fa-brands fa-google" style="color:#fbbf24"></i>
+                        <span class="setup-label text-yellow">Add FREE Gemini API Key for real AI</span>
+                    </div>
+                    <button class="btn-setup-change btn-setup-add" id="btn-add-api-key">
+                        <i class="fa-solid fa-plus"></i> Add Key (Free)
+                    </button>
+                `}
+            </div>
+            <div class="gemini-key-form" id="gemini-key-form" style="display:none;">
+                <div class="key-form-inner">
+                    <div class="key-form-info">
+                        <i class="fa-brands fa-google text-cyan"></i>
+                        <div>
+                            <strong class="text-white">Google Gemini — 100% Free</strong>
+                            <div class="text-xs text-muted">1,500 requests/day · No credit card needed</div>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="key-link">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Get free key at aistudio.google.com
+                            </a>
+                        </div>
+                    </div>
+                    <div class="key-form-fields">
+                        <input type="password" id="gemini-key-input" class="gemini-key-input"
+                            placeholder="Paste your Gemini API key → AIzaSy..."
+                            value="${this.config.apiKey || ''}" autocomplete="off" spellcheck="false">
+                        <select id="gemini-model-select" class="gemini-model-select">
+                            <option value="gemini-2.0-flash" ${this.config.model === 'gemini-2.0-flash' ? 'selected' : ''}>gemini-2.0-flash (Recommended)</option>
+                            <option value="gemini-1.5-flash" ${this.config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-1.5-flash</option>
+                            <option value="gemini-1.5-flash-8b" ${this.config.model === 'gemini-1.5-flash-8b' ? 'selected' : ''}>gemini-1.5-flash-8b (Fastest)</option>
+                        </select>
+                    </div>
+                    <div class="key-form-actions">
+                        <button class="btn-key-save" id="btn-save-gemini-key">
+                            <i class="fa-solid fa-bolt"></i> Connect AI
+                        </button>
+                        <button class="btn-key-clear" id="btn-clear-gemini-key">
+                            Use Offline Engine
+                        </button>
+                    </div>
+                    <div id="key-test-status" class="key-test-status" style="display:none;"></div>
+                </div>
+            </div>
+        `;
+
+        this.bindSetupEvents();
+    },
+
+    bindSetupEvents() {
+        const openBtn  = document.getElementById("btn-add-api-key") || document.getElementById("btn-change-api-key");
+        const form     = document.getElementById("gemini-key-form");
+        const saveBtn  = document.getElementById("btn-save-gemini-key");
+        const clearBtn = document.getElementById("btn-clear-gemini-key");
+
+        if (openBtn && form) {
+            openBtn.addEventListener("click", () => {
+                form.style.display = form.style.display === "none" ? "block" : "none";
+            });
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener("click", () => this.testAndSaveKey());
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                this.saveConfig("", "gemini-2.0-flash");
+                window.StorageManager.remove("citybrain_gemini_config");
+                if (form) form.style.display = "none";
+                this.renderKeySetupUI();
+                this.updateStatusBadge();
+            });
+        }
+
+        // Enter key in input
+        const keyInput = document.getElementById("gemini-key-input");
+        if (keyInput) {
+            keyInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") this.testAndSaveKey();
+            });
         }
     },
 
-    saveConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        const prefs = window.StorageManager.load(window.StorageManager.KEYS.USER_PREFS, {}) || {};
-        prefs.llmConfig = {
-            offlineMode: this.config.offlineMode,
-            endpoint: this.config.endpoint,
-            model: this.config.model
-            // Never persist raw keys in plain storage if user prefers session-only
-        };
-        window.StorageManager.save(window.StorageManager.KEYS.USER_PREFS, prefs);
+    async testAndSaveKey() {
+        const key   = (document.getElementById("gemini-key-input")?.value || "").trim();
+        const model = document.getElementById("gemini-model-select")?.value || "gemini-2.0-flash";
+        const status = document.getElementById("key-test-status");
+
+        if (!key) {
+            this.showKeyStatus("⚠️ Please paste your API key first.", "status-warn");
+            return;
+        }
+
+        this.showKeyStatus("🔄 Verifying key with Gemini...", "status-testing");
+
+        try {
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            const res = await fetch(testUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "Respond only with: OK" }] }]
+                })
+            });
+
+            if (res.ok) {
+                this.saveConfig(key, model);
+                this.showKeyStatus("✅ Connected! AI streaming is now active.", "status-ok");
+                setTimeout(() => {
+                    document.getElementById("gemini-key-form").style.display = "none";
+                    this.renderKeySetupUI();
+                    this.updateStatusBadge();
+                }, 1200);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                const msg = err?.error?.message || `HTTP ${res.status}`;
+                this.showKeyStatus(`❌ Invalid key: ${msg}`, "status-error");
+            }
+        } catch (e) {
+            this.showKeyStatus(`❌ Network error: ${e.message}`, "status-error");
+        }
     },
 
+    showKeyStatus(msg, cls) {
+        const el = document.getElementById("key-test-status");
+        if (!el) return;
+        el.style.display = "block";
+        el.className = `key-test-status ${cls}`;
+        el.innerHTML = msg;
+    },
+
+    updateStatusBadge() {
+        const badge = document.getElementById("llm-mode-badge");
+        if (!badge) return;
+        if (this.config.apiKey) {
+            badge.textContent = "Gemini AI ✦ Live";
+            badge.className = "badge-gemini-live";
+        } else {
+            badge.textContent = "Offline Engine";
+            badge.className = "badge-offline";
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  EVENT BINDING
+    // ─────────────────────────────────────────────────────────────────────────
     bindEvents() {
-        const input = document.getElementById("chat-input");
+        const input   = document.getElementById("chat-input");
         const sendBtn = document.getElementById("btn-chat-send");
-        const clearBtn = document.getElementById("btn-clear-chat");
-        const configBtn = document.getElementById("btn-chat-config");
+        const clearBtn= document.getElementById("btn-clear-chat");
 
         if (input && sendBtn) {
             sendBtn.addEventListener("click", () => this.handleUserSubmit());
-
             input.addEventListener("keydown", (e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -77,462 +284,354 @@ const CityBrainChatbot = {
         }
 
         if (clearBtn) {
-            clearBtn.addEventListener("click", () => this.clearChatHistory());
+            clearBtn.addEventListener("click", () => this.clearChat());
         }
 
-        // Suggested question chips
-        const chips = document.querySelectorAll(".suggestion-chip");
-        chips.forEach(chip => {
-            chip.addEventListener("click", (e) => {
-                const query = chip.getAttribute("data-query") || chip.innerText.trim();
-                if (input) {
-                    input.value = query;
-                    this.handleUserSubmit();
-                }
+        // Suggestion chips
+        document.querySelectorAll(".suggestion-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                const q = chip.getAttribute("data-query") || chip.innerText.trim();
+                if (input) { input.value = q; this.handleUserSubmit(); }
             });
         });
-
-        // LLM Modal bindings
-        this.bindModalEvents();
     },
 
-    bindModalEvents() {
-        const modal = document.getElementById("llm-config-modal");
-        const openBtn = document.getElementById("btn-open-llm-settings");
-        const closeBtn = document.getElementById("btn-close-llm-modal");
-        const saveBtn = document.getElementById("btn-save-llm-config");
-
-        if (openBtn && modal) {
-            openBtn.addEventListener("click", () => {
-                const endpointInput = document.getElementById("llm-endpoint-input");
-                const modelInput = document.getElementById("llm-model-input");
-                const offlineToggle = document.getElementById("llm-offline-toggle");
-
-                if (endpointInput) endpointInput.value = this.config.endpoint || "";
-                if (modelInput) modelInput.value = this.config.model || "gpt-4o-mini";
-                if (offlineToggle) offlineToggle.checked = this.config.offlineMode;
-
-                modal.classList.add("active");
-            });
-        }
-
-        if (closeBtn && modal) {
-            closeBtn.addEventListener("click", () => modal.classList.remove("active"));
-        }
-
-        if (saveBtn && modal) {
-            saveBtn.addEventListener("click", () => {
-                const endpoint = document.getElementById("llm-endpoint-input")?.value.trim() || "";
-                const apiKey = document.getElementById("llm-key-input")?.value.trim() || "";
-                const model = document.getElementById("llm-model-input")?.value.trim() || "gpt-4o-mini";
-                const offlineMode = document.getElementById("llm-offline-toggle")?.checked ?? true;
-
-                this.saveConfig({ endpoint, apiKey, model, offlineMode });
-                modal.classList.remove("active");
-
-                const statusTag = document.getElementById("llm-mode-badge");
-                if (statusTag) {
-                    statusTag.innerText = offlineMode ? "Offline Rule Engine" : "Custom LLM Connected";
-                    statusTag.className = offlineMode ? "badge-offline" : "badge-online";
-                }
-            });
-        }
-    },
-
-    loadChatHistory() {
-        const history = window.StorageManager.load(window.StorageManager.KEYS.CHAT_HISTORY, null);
-        const container = document.getElementById("chat-messages-container");
-        if (!container) return;
-
-        container.innerHTML = "";
-
-        if (!history || history.length === 0) {
-            this.appendMessageToDOM(this.welcomeMessage.sender, this.welcomeMessage.text, this.welcomeMessage.timestamp);
-            return;
-        }
-
-        history.forEach(msg => {
-            this.appendMessageToDOM(msg.sender, msg.text, msg.timestamp);
-        });
-
-        this.scrollToBottom();
-    },
-
-    clearChatHistory() {
-        if (confirm("Reset conversation history? This will clear session transcripts.")) {
-            window.StorageManager.remove(window.StorageManager.KEYS.CHAT_HISTORY);
-            const container = document.getElementById("chat-messages-container");
-            if (container) container.innerHTML = "";
-            this.context = { lastTopic: null, lastZoneMentioned: null, lastSimResult: null, interactionCount: 0 };
-            this.appendMessageToDOM(this.welcomeMessage.sender, this.welcomeMessage.text, "Just now");
-        }
-    },
-
+    // ─────────────────────────────────────────────────────────────────────────
+    //  SUBMIT HANDLER
+    // ─────────────────────────────────────────────────────────────────────────
     async handleUserSubmit() {
         const input = document.getElementById("chat-input");
-        if (!input || this.isTyping) return;
+        if (!input || this.isStreaming) return;
 
-        const query = input.value.trim();
-        if (!query) return;
-
+        const userText = input.value.trim();
+        if (!userText) return;
         input.value = "";
-        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // 1. Render User Message
-        this.appendMessageToDOM("user", query, timestamp);
-        this.saveMessage("user", query, timestamp);
+        const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-        // 2. Show Typing Indicator
-        this.showTypingIndicator();
+        // Render user bubble
+        this.appendMessage("user", userText, ts);
+        this.pushHistory("user", userText);
 
-        // 3. Process Response
+        // Show typing
+        this.showTyping();
+
         try {
-            const botResponse = await this.generateResponse(query);
-            this.hideTypingIndicator();
-            this.typeBotResponse(botResponse);
-        } catch (err) {
-            console.error("Chat error:", err);
-            this.hideTypingIndicator();
-            this.typeBotResponse("⚠️ Error communicating with intelligence service. Operating in failsafe offline mode.");
-        }
-    },
-
-    // Core Intent & Response Engine
-    async generateResponse(userText) {
-        const text = userText.toLowerCase().trim();
-        const base = window.CITY_DATA.baseline;
-        const zones = window.CITY_DATA.zones;
-        this.context.interactionCount++;
-
-        // If user configured a custom LLM endpoint and disabled offline mode
-        if (!this.config.offlineMode && this.config.endpoint && this.config.apiKey) {
-            try {
-                return await this.callExternalLLM(userText);
-            } catch (e) {
-                console.warn("External LLM failed, falling back to offline rule engine:", e);
+            if (this.config.apiKey && !this.config.offlineMode) {
+                await this.streamGeminiResponse(userText);
+            } else {
+                // Offline engine with simulated delay
+                const response = await this.offlineEngine(userText);
+                this.hideTyping();
+                await this.streamOfflineResponse(response);
             }
+        } catch (err) {
+            this.hideTyping();
+            console.error("Chat error:", err);
+            this.appendMessage("bot",
+                `⚠️ **Connection Error:** ${err.message}\n\nFalling back to offline engine...`,
+                new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            );
         }
 
-        // Simulate intelligent slight latency (300-600ms) for realistic command room feel
-        await new Promise(r => setTimeout(r, 450));
-
-        // 1. SPECIFIC WHAT-IF / SIMULATION PROMPTS
-        // e.g. "What happens if population increases by 20%?"
-        const popMatch = text.match(/population\s*(increases|grows|rises|drops|decreases)?\s*(by)?\s*([+-]?\d+)\s*%/i);
-        if (popMatch || (text.includes("population") && (text.includes("increase") || text.includes("growth")))) {
-            const pct = popMatch ? parseInt(popMatch[3], 10) : 20;
-            const sim = window.SimulationEngine.compute({
-                population: pct,
-                vehicleUsage: 0,
-                roadCapacity: 0,
-                waterSupply: 0,
-                electricityDemand: 0,
-                pollutionControl: 0
-            });
-            this.context.lastTopic = "simulation";
-            this.context.lastSimResult = sim;
-            return `📊 **Simulation Analysis: +${pct}% Population Growth**\n\nIf Chennai's metropolitan population increases by **${pct}%** (reaching **${(sim.simulated.population / 1000000).toFixed(2)}M citizens**):\n\n` +
-                   `• **Traffic Congestion:** Expands to **${sim.simulated.traffic}%** (${sim.deltas.traffic >= 0 ? '+' : ''}${sim.deltas.trafficPct}%) due to passenger volume spillover on bus and road corridors.\n` +
-                   `• **Water Demand:** Surges to **${sim.simulated.waterDemand} MLD**, opening a daily deficit gap of **${sim.simulated.waterDeficit} MLD** against existing reservoir and desalination limits.\n` +
-                   `• **Electricity Grid:** Peak draw escalates to **${sim.simulated.electricity} MW**, reducing reserve margin to **${sim.simulated.gridReserveMargin}%**.\n` +
-                   `• **City Infrastructure Health:** Drops from **${base.infrastructureHealth}** to **${sim.simulated.health} / 100**.\n\n` +
-                   `💡 *Recommendation:* High-density transit-oriented development along Outer Ring Road and accelerating the 150 MLD Perur desalination plant.`;
-        }
-
-        // e.g. "What if vehicle usage decreases by 15%?"
-        const vehMatch = text.match(/vehicle\s*(usage|count)?\s*(decreases|drops|reduces|rises|increases)?\s*(by)?\s*([+-]?\d+)\s*%/i);
-        if (vehMatch || (text.includes("vehicle") && (text.includes("decrease") || text.includes("reduce") || text.includes("electric")))) {
-            const pct = vehMatch ? -Math.abs(parseInt(vehMatch[4], 10)) : -15;
-            const sim = window.SimulationEngine.compute({
-                population: 0,
-                vehicleUsage: pct,
-                roadCapacity: 0,
-                waterSupply: 0,
-                electricityDemand: 0,
-                pollutionControl: 20
-            });
-            this.context.lastTopic = "simulation";
-            return `🌱 **Simulation Analysis: ${pct}% Vehicle Reduction**\n\n` +
-                   `Lowering vehicular density across Chennai yields dramatic cascade benefits:\n\n` +
-                   `• **Traffic Congestion:** Drops from **${base.trafficCongestion}%** down to **${sim.simulated.traffic}%** (${sim.deltas.trafficPct}% improvement).\n` +
-                   `• **Air Quality Index:** Improves significantly to **${sim.simulated.aqi} AQI** (down from ${base.aqi}), cutting harmful nitrogen oxides and PM2.5 in commercial zones like T. Nagar.\n` +
-                   `• **Commuter Speeds:** Average speed across Anna Salai and OMR estimated to increase by **7.4 km/h**.\n` +
-                   `• **Civic Health Score:** Elevated to **${sim.simulated.health} / 100**.\n\n` +
-                   `💡 *Next Step:* You can verify this full multi-variable scenario in the **What-If Simulator** tab.`;
-        }
-
-        // 2. TRAFFIC PREDICTIONS & CONDITIONS
-        // e.g. "Predict traffic at 6 PM"
-        if (text.includes("predict traffic at 6 pm") || text.includes("6 pm") || text.includes("evening traffic") || text.includes("peak hour")) {
-            this.context.lastTopic = "traffic";
-            return `🚦 **Chennai Traffic Forecast (18:00 / 6:00 PM Peak Window):**\n\n` +
-                   `• **Projected Congestion Level:** **92% (Severe / Red)**\n` +
-                   `• **Primary Bottlenecks:**\n` +
-                   `  1. **Kathipara Cloverleaf (Guindy):** Extreme inbound convergence from GST Road and Anna Salai.\n` +
-                   `  2. **OMR Cyber Corridor (Tidel Park to Perungudi):** Heavy tech workforce egress. Speeds ~12 km/h.\n` +
-                   `  3. **Poonamallee High Road & Koyambedu Market:** Elevated commercial logistics flow.\n` +
-                   `• **Recommended Transit Alternative:** Chennai Metro Blue and Green Lines operate at 99.4% punctuality with 5-minute headway, bypassing 45 minutes of arterial gridlock.`;
-        }
-
-        if (text.includes("traffic condition") || text.includes("current traffic") || text.includes("congestion in chennai") || text.includes("traffic status")) {
-            this.context.lastTopic = "traffic";
-            return `🚦 **Current Metropolitan Traffic Overview:**\n\n` +
-                   `• **Citywide Congestion:** **${base.trafficCongestion}%** (High peak load)\n` +
-                   `• **Most Congested Sector:** **T. Nagar (88%)** and **Guindy Interchange (84%)**\n` +
-                   `• **Freest Flowing Corridor:** **East Coast Road (ECR) at 48%**\n` +
-                   `• **Average Commuter Speed:** **19.2 km/h** across primary arterials.\n` +
-                   `• **Active Signal Control:** 180 smart AI adaptive signals operational at key junctions. Check the **Traffic Intelligence** tab for live road gauges.`;
-        }
-
-        // 3. POLLUTION & AIR QUALITY
-        // e.g. "Which city areas have high pollution?"
-        if (text.includes("high pollution") || text.includes("pollution hotspot") || text.includes("which areas") || text.includes("air quality") || text.includes("aqi")) {
-            this.context.lastTopic = "pollution";
-            return `🌫️ **Chennai Air Quality & Hotspot Report:**\n\n` +
-                   `The metropolitan average AQI is currently **${base.aqi}** (Moderate/Unhealthy for Sensitive Groups).\n\n` +
-                   `**Top 3 High-Pollution Zones:**\n` +
-                   `1. **Chennai Port & Parrys Corner (AQI 182):** Heavy diesel container truck idling and maritime freight activities.\n` +
-                   `2. **Koyambedu CMBT Hub (AQI 175):** Dense long-distance bus exhaust and wholesale freight logistics.\n` +
-                   `3. **Guindy Industrial Estate (AQI 172):** Industrial manufacturing outputs paired with high vehicle density.\n\n` +
-                   `🌿 **Cleanest Zone:** **Adyar & Besant Nagar (AQI 98)** aided by sea breezes and green estuarine canopy.`;
-        }
-
-        // 4. WATER MANAGEMENT
-        // e.g. "Predict tomorrow's water demand."
-        if (text.includes("water demand") || text.includes("water consumption") || text.includes("water shortage") || text.includes("reservoir")) {
-            this.context.lastTopic = "water";
-            const currentDemand = base.waterConsumptionMLD;
-            const projectedTomorrow = Math.round(currentDemand * 1.025);
-            return `💧 **Chennai Water Metro Intelligence:**\n\n` +
-                   `• **Current Daily Consumption:** **${currentDemand} MLD**\n` +
-                   `• **Predicted Tomorrow's Demand:** **${projectedTomorrow} MLD** (+2.5% weekend commercial and residential draw)\n` +
-                   `• **Key Reservoir Storage:** Chembarambakkam (85%), Poondi (76%), Red Hills (87%)\n` +
-                   `• **Desalination Yield:** **250 MLD** combined uninterrupted output from Nemmeli and Minjur plants.\n` +
-                   `• **Shortage Vulnerability:** Low to moderate. Summer reserves are adequate for 118 days at current extraction velocity.`;
-        }
-
-        // 5. ELECTRICITY CONSUMPTION
-        // e.g. "How can we reduce electricity consumption?"
-        if (text.includes("reduce electricity") || text.includes("electricity consumption") || text.includes("power demand") || text.includes("save energy")) {
-            this.context.lastTopic = "electricity";
-            return `⚡ **CityBrain Energy Optimization Strategies:**\n\n` +
-                   `Chennai currently draws **${base.electricityDemandMW} MW** against a safe grid threshold of **${base.gridCapacityMW} MW**.\n\n` +
-                   `**AI Recommendations to Cut Load by 14-18%:**\n` +
-                   `1. **Dynamic Chiller Modulation:** Mandate IT parks on OMR and DLF Porur to pre-cool campus buildings before 11:00 AM, lowering peak thermal draw.\n` +
-                   `2. **Smart LED Streetlighting:** Deploy motion-dimming on ECR, Inner Ring Road, and bypass corridors, reducing municipal power drain by 32 MW.\n` +
-                   `3. **Rooftop Solar Net-Metering:** Fast-track 200 MW commercial rooftop solar integration in industrial corridors.\n` +
-                   `4. **Peak Tariff Incentives:** Shift non-critical industrial heavy loads to off-peak night cycles (23:00 - 05:00).`;
-        }
-
-        // 6. ZONE SPECIFIC QUERY
-        // e.g. "Tell me about Anna Nagar" or "T Nagar" or "Guindy"
-        const foundZone = zones.find(z => text.includes(z.name.toLowerCase()) || text.includes(z.id.replace("-", " ")));
-        if (foundZone) {
-            this.context.lastZoneMentioned = foundZone;
-            return `📍 **Zone Intelligence Dossier: ${foundZone.name}**\n\n` +
-                   `• **Classification:** ${foundZone.zoneType}\n` +
-                   `• **Congestion Level:** **${foundZone.congestion}%** (${foundZone.status})\n` +
-                   `• **Air Quality:** **AQI ${foundZone.aqi}**\n` +
-                   `• **Water Consumption:** **${foundZone.waterDemandMLD} MLD**\n` +
-                   `• **Electricity Draw:** **${foundZone.electricityMW} MW**\n` +
-                   `• **Situation Summary:** ${foundZone.description}\n\n` +
-                   `💡 *Tip:* View this sector with glowing visual beacons in the **Smart City Map** tab.`;
-        }
-
-        // 7. GREETINGS & INTRO
-        if (text.match(/^(hi|hello|hey|greetings|namaste|vanakkam)/)) {
-            return `Vanakkam! 🙏 I am your **CITYBRAIN AI ASSISTANT**. All civic telemetry systems for Chennai are connected and transmitting.\n\n` +
-                   `I can assist you with real-time analytics, infrastructure stress predictions, and what-if policy scenarios. How may I assist your command session?`;
-        }
-
-        // 8. HELP / CAPABILITIES
-        if (text.includes("help") || text.includes("what can you do") || text.includes("commands")) {
-            return `🤖 **CityBrain Assistant Capabilities:**\n\n` +
-                   `• **Traffic Queries:** Ask about peak hours, bottlenecks, or corridor speeds (Anna Salai, OMR, Guindy).\n` +
-                   `• **Air Quality:** Inquire about AQI readings, pollution hotspots, and emission mitigation.\n` +
-                   `• **What-If Simulations:** Ask things like *"What happens if population increases by 20%?"* or *"What if vehicle usage decreases by 15%?"*.\n` +
-                   `• **Resource Metrics:** Check daily MLD water demand or MW grid consumption.\n` +
-                   `• **Zone Lookups:** Request data for Anna Nagar, T. Nagar, Tambaram, Perambur, Adyar, etc.`;
-        }
-
-        // 9. CONTEXTUAL FOLLOW-UP
-        if (this.context.lastTopic === "traffic" && (text.includes("how to fix") || text.includes("solutions") || text.includes("recommendation"))) {
-            return `🛠️ **AI Action Plan for Traffic Mitigation:**\n\n` +
-                   `1. Synchronize traffic signals along the Kathipara-Guindy and Gemini Flyover corridors.\n` +
-                   `2. Mandate flexible office entry hours for tech parks along OMR (staggering between 8:30 AM and 10:30 AM).\n` +
-                   `3. Deploy feeder feeder e-shuttles connecting suburban rail and metro stations.`;
-        }
-
-        // 10. DEFAULT INTELLIGENT FALLBACK
-        return `🧠 **CityBrain Intelligence Dispatch:**\n\n` +
-               `I analyzed your query: *"\"${userText}\""* against Chennai's municipal data mesh.\n\n` +
-               `Current telemetry indicators:\n` +
-               `• **Metropolitan Health:** **${base.infrastructureHealth} / 100** (Operational)\n` +
-               `• **Active Congestion:** **${base.trafficCongestion}%**\n` +
-               `• **Air Quality Index:** **${base.aqi} AQI**\n\n` +
-               `Try asking: *"Predict traffic at 6 PM"*, *"What happens if population increases by 20%?"*, or *"Which city areas have high pollution?"*.`;
+        this.context.interactionCount++;
+        this.saveHistory();
     },
 
-    // Optional external LLM API caller (e.g., standard OpenAI/Gemini proxy endpoint)
-    async callExternalLLM(prompt) {
+    // ─────────────────────────────────────────────────────────────────────────
+    //  GEMINI STREAMING API
+    // ─────────────────────────────────────────────────────────────────────────
+    async streamGeminiResponse(userText) {
+        this.isStreaming = true;
+
         const payload = {
-            model: this.config.model || "gpt-4o-mini",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are CITYBRAIN AI ASSISTANT, an advanced AI system for the futuristic Chennai Smart City Simulator. Answer with crisp, authoritative urban-planning intelligence, statistics, and concrete civic recommendations."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ],
-            temperature: 0.7
+            system_instruction: { parts: [{ text: this.SYSTEM_PROMPT }] },
+            contents: this.history.map(h => ({
+                role: h.role,
+                parts: [{ text: h.text }]
+            })),
+            generationConfig: {
+                temperature: 0.8,
+                topP: 0.95,
+                maxOutputTokens: 1024
+            }
         };
 
-        const res = await fetch(this.config.endpoint, {
+        const response = await fetch(this.ENDPOINT, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.config.apiKey}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error(`LLM API returned ${res.status}`);
-        const data = await res.json();
-        return data.choices?.[0]?.message?.content || "No response received from external LLM.";
+        if (!response.ok) {
+            const errJson = await response.json().catch(() => ({}));
+            throw new Error(errJson?.error?.message || `API error ${response.status}`);
+        }
+
+        this.hideTyping();
+
+        // Create streaming bubble
+        const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const { bubble, msgDiv } = this.createBotBubble(ts);
+
+        const reader  = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer    = "";
+        let fullText  = "";
+
+        // Blink cursor
+        bubble.innerHTML = '<span class="stream-cursor"></span>';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
+
+                for (const line of lines) {
+                    if (!line.startsWith("data: ")) continue;
+                    const raw = line.slice(6).trim();
+                    if (!raw || raw === "[DONE]") continue;
+
+                    try {
+                        const json  = JSON.parse(raw);
+                        const chunk = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+                        if (chunk) {
+                            fullText += chunk;
+                            bubble.innerHTML = this.formatMarkdown(fullText) + '<span class="stream-cursor"></span>';
+                            this.scrollToBottom();
+                        }
+                    } catch (_) { /* partial JSON, skip */ }
+                }
+            }
+        } finally {
+            reader.cancel().catch(() => {});
+        }
+
+        // Finalise
+        bubble.innerHTML = this.formatMarkdown(fullText);
+        this.scrollToBottom();
+        this.pushHistory("model", fullText);
+        this.isStreaming = false;
     },
 
-    // Append to DOM
-    appendMessageToDOM(sender, text, timestamp) {
+    // ─────────────────────────────────────────────────────────────────────────
+    //  OFFLINE ENGINE (keyword + intent)
+    // ─────────────────────────────────────────────────────────────────────────
+    async offlineEngine(text) {
+        await new Promise(r => setTimeout(r, 380));
+        const t = text.toLowerCase();
+        const base = window.CITY_DATA?.baseline || {};
+        const zones = window.CITY_DATA?.zones || [];
+
+        // Population what-if
+        const popMatch = text.match(/population.{0,25}(\d+)\s*%/i);
+        if (popMatch) {
+            const pct = parseInt(popMatch[1]);
+            const sim = window.SimulationEngine?.compute({ population: pct, vehicleUsage:0, roadCapacity:0, waterSupply:0, electricityDemand:0, pollutionControl:0 });
+            if (sim) return `📊 **Simulation: +${pct}% Population Growth**\n\n• **Traffic:** ${sim.simulated.traffic}% congestion (${sim.deltas.trafficPct}% change)\n• **Water Demand:** ${sim.simulated.waterDemand} MLD — deficit of **${sim.simulated.waterDeficit} MLD**\n• **Electricity:** ${sim.simulated.electricity} MW (${sim.deltas.electricityPct}% change)\n• **City Health:** ${sim.simulated.health}/100\n\n💡 Accelerate the Outer Ring Road transit corridor and Perur desalination plant.`;
+        }
+
+        // Vehicle what-if
+        const vehMatch = text.match(/vehicle.{0,20}(\d+)\s*%/i);
+        if (vehMatch) {
+            const pct = t.includes("decreas") || t.includes("reduc") ? -parseInt(vehMatch[1]) : parseInt(vehMatch[1]);
+            const sim = window.SimulationEngine?.compute({ population:0, vehicleUsage:pct, roadCapacity:0, waterSupply:0, electricityDemand:0, pollutionControl:20 });
+            if (sim) return `🚗 **Simulation: ${pct}% Vehicle Usage**\n\n• **Traffic:** Drops to **${sim.simulated.traffic}%** (${sim.deltas.trafficPct}%)\n• **AQI:** Improves to **${sim.simulated.aqi}** from ${base.aqi}\n• **Health Score:** ${sim.simulated.health}/100\n\n💡 Expand Chennai Metro Phase 2 and deploy EV feeder buses from suburban rail hubs.`;
+        }
+
+        // 6 PM / peak traffic
+        if (t.includes("6 pm") || t.includes("peak") || t.includes("evening traffic")) {
+            return `🚦 **Chennai 18:00 Peak Traffic Forecast**\n\n• **Projected Congestion:** **92%** (Critical — Red)\n• **Worst Bottlenecks:**\n  1. Kathipara Cloverleaf / Guindy — severe inbound merge\n  2. OMR Tidel Park to Perungudi — tech workforce egress (~12 km/h)\n  3. Poonamallee High Road & Koyambedu junction\n• **Best Alternative:** Chennai Metro (Blue/Green lines) — 5-min headway, bypasses 45 min of gridlock.`;
+        }
+
+        // Traffic general
+        if (t.includes("traffic") || t.includes("congestion")) {
+            return `🚦 **Live Traffic Intelligence**\n\n• **Citywide Congestion:** **${base.trafficCongestion || 68}%** — High load\n• **Most Congested:** T. Nagar (88%), Guindy (84%), Koyambedu (86%)\n• **Freest Corridor:** ECR — East Coast Road at 48%\n• **Average Speed:** 19.2 km/h across primary arterials\n• 180 AI-adaptive signals are active at major junctions right now.`;
+        }
+
+        // Pollution / AQI
+        if (t.includes("pollution") || t.includes("aqi") || t.includes("air quality")) {
+            return `🌫️ **Atmospheric Intelligence Report**\n\n• **Metro Average AQI:** **${base.aqi || 142}** (Moderate — Unhealthy for Sensitive Groups)\n• **Critical Hotspots:**\n  1. Chennai Port & Parrys — AQI 182 (maritime diesel + freight)\n  2. Koyambedu CMBT — AQI 175 (bus exhaust + logistics)\n  3. Guindy Estate — AQI 172 (industrial output)\n• **Cleanest Zone:** Adyar & Besant Nagar — AQI **98** (sea breeze + green canopy)`;
+        }
+
+        // Water
+        if (t.includes("water") || t.includes("reservoir") || t.includes("demand")) {
+            return `💧 **Chennai Water Metro Status**\n\n• **Daily Consumption:** **${base.waterConsumptionMLD || 985} MLD**\n• **Supply Capacity:** ${base.waterSupplyCapacityMLD || 1050} MLD (Surplus: 65 MLD)\n• **Chembarambakkam:** 3,120 / 3,645 mcft — **85% full**\n• **Poondi Reservoir:** 2,450 / 3,231 mcft — **76% full**\n• **Desalination:** Nemmeli (150 MLD) + Minjur (100 MLD) at 100% output\n• **Projected Tomorrow:** ~1,010 MLD (+2.5% weekend draw)`;
+        }
+
+        // Electricity
+        if (t.includes("electricity") || t.includes("power") || t.includes("grid") || t.includes("energy")) {
+            return `⚡ **TANGEDCO Grid Intelligence**\n\n• **Peak Demand:** **${base.electricityDemandMW || 3920} MW** vs 4,500 MW ceiling\n• **Reserve Buffer:** 13% — grid frequency stable at 50.02 Hz\n• **Top Load Zones:** OMR Cyber Grid (520 MW), T. Nagar Substation (460 MW)\n• **AI Energy Tips:**\n  1. Pre-cool IT campus buildings before 11:00 AM\n  2. Shift heavy industrial loads to 23:00–05:00 off-peak\n  3. Mandate commercial rooftop solar in Guindy & Ambattur estates`;
+        }
+
+        // Zone lookup
+        const zone = zones.find(z => t.includes(z.name.toLowerCase().split(" ")[0]));
+        if (zone) {
+            return `📍 **Zone Dossier: ${zone.name}**\n\n• **Type:** ${zone.zoneType}\n• **Congestion:** ${zone.congestion}% (${zone.status})\n• **AQI:** ${zone.aqi}\n• **Water Demand:** ${zone.waterDemandMLD} MLD\n• **Electricity:** ${zone.electricityMW} MW\n\n${zone.description}`;
+        }
+
+        // Greetings
+        if (/^(hi|hello|hey|vanakkam|namaste)/i.test(t)) {
+            return `Vanakkam! 🙏 **CITYBRAIN NEURAL CORE ONLINE**\n\nI'm monitoring Chennai's 11.5M-citizen smart grid in real time. Ask me about traffic, pollution, water, electricity, or run what-if scenarios.\n\n*Add your free Gemini API key (top of this panel) for full AI conversation mode!*`;
+        }
+
+        // Help
+        if (t.includes("help") || t.includes("what can you do")) {
+            return `🤖 **CITYBRAIN Capabilities**\n\n• **Traffic:** peak hours, bottlenecks, corridor speeds\n• **Air Quality:** AQI readings, hotspots, emission sources\n• **What-If:** *"What if population increases 20%?"* or *"Vehicle usage -15%?"*\n• **Resources:** water demand, reservoir levels, grid MW draw\n• **Zone Intel:** Anna Nagar, T. Nagar, Tambaram, OMR, Adyar and more\n\n💡 Add your **free Gemini API key** for full natural-language AI answers!`;
+        }
+
+        // Fallback
+        return `🧠 **CITYBRAIN Dispatch**\n\nQueried: *"${text}"*\n\n**Current Grid Snapshot:**\n• Congestion: **${base.trafficCongestion || 68}%** · AQI: **${base.aqi || 142}** · Grid: **${base.electricityDemandMW || 3920} MW** · Health: **${base.infrastructureHealth || 74}/100**\n\n💡 For full natural-language AI answers, add your **free Gemini API key** at the top of this panel.\nOr try: *"Predict traffic at 6 PM"*, *"What if population increases by 20%?"*`;
+    },
+
+    // Simulated character-stream for offline responses
+    async streamOfflineResponse(text) {
+        const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const { bubble } = this.createBotBubble(ts);
+        this.isStreaming = true;
+
+        let i = 0;
+        bubble.innerHTML = '<span class="stream-cursor"></span>';
+
+        await new Promise(resolve => {
+            const iv = setInterval(() => {
+                i = Math.min(i + 6, text.length);
+                bubble.innerHTML = this.formatMarkdown(text.substring(0, i)) + '<span class="stream-cursor"></span>';
+                this.scrollToBottom();
+                if (i >= text.length) {
+                    clearInterval(iv);
+                    bubble.innerHTML = this.formatMarkdown(text);
+                    this.scrollToBottom();
+                    resolve();
+                }
+            }, 14);
+        });
+
+        this.pushHistory("model", text);
+        this.isStreaming = false;
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  DOM HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+    appendMessage(sender, text, ts) {
         const container = document.getElementById("chat-messages-container");
         if (!container) return;
-
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `chat-message ${sender}-message`;
-
-        const avatar = sender === "user" 
-            ? `<div class="msg-avatar user-avatar"><i class="fa-solid fa-user-astronaut"></i></div>`
-            : `<div class="msg-avatar bot-avatar"><i class="fa-solid fa-brain"></i></div>`;
-
-        const formattedText = this.formatMarkdown(text);
-
-        msgDiv.innerHTML = `
-            ${avatar}
-            <div class="msg-content-wrapper">
-                <div class="msg-header">
-                    <span class="msg-sender">${sender === "user" ? "OPERATOR" : "CITYBRAIN AI"}</span>
-                    <span class="msg-time">${timestamp || "Now"}</span>
-                </div>
-                <div class="msg-bubble">${formattedText}</div>
-            </div>
-        `;
-
-        container.appendChild(msgDiv);
+        const div = document.createElement("div");
+        div.className = `chat-message ${sender}-message`;
+        div.innerHTML = sender === "user"
+            ? `<div class="msg-avatar user-avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+               <div class="msg-content-wrapper">
+                   <div class="msg-header"><span class="msg-sender">YOU</span><span class="msg-time">${ts}</span></div>
+                   <div class="msg-bubble user-bubble">${this.escapeHtml(text)}</div>
+               </div>`
+            : `<div class="msg-avatar bot-avatar"><i class="fa-solid fa-brain"></i></div>
+               <div class="msg-content-wrapper">
+                   <div class="msg-header"><span class="msg-sender">CITYBRAIN AI</span><span class="msg-time">${ts}</span></div>
+                   <div class="msg-bubble bot-bubble">${this.formatMarkdown(text)}</div>
+               </div>`;
+        container.appendChild(div);
         this.scrollToBottom();
     },
 
-    // Save message to LocalStorage
-    saveMessage(sender, text, timestamp) {
-        const history = window.StorageManager.load(window.StorageManager.KEYS.CHAT_HISTORY, []) || [];
-        history.push({ sender, text, timestamp });
-        // Keep latest 50 messages
-        const trimmed = history.slice(-50);
-        window.StorageManager.save(window.StorageManager.KEYS.CHAT_HISTORY, trimmed);
-    },
-
-    // Typing effect for bot responses
-    typeBotResponse(fullText) {
+    createBotBubble(ts) {
         const container = document.getElementById("chat-messages-container");
-        if (!container) return;
-
-        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
         const msgDiv = document.createElement("div");
         msgDiv.className = "chat-message bot-message";
         msgDiv.innerHTML = `
             <div class="msg-avatar bot-avatar"><i class="fa-solid fa-brain"></i></div>
             <div class="msg-content-wrapper">
-                <div class="msg-header">
-                    <span class="msg-sender">CITYBRAIN AI</span>
-                    <span class="msg-time">${timestamp}</span>
-                </div>
-                <div class="msg-bubble typing-bubble"></div>
-            </div>
-        `;
-
+                <div class="msg-header"><span class="msg-sender">CITYBRAIN AI</span><span class="msg-time">${ts}</span></div>
+                <div class="msg-bubble bot-bubble"></div>
+            </div>`;
         container.appendChild(msgDiv);
-        const bubble = msgDiv.querySelector(".msg-bubble");
+        const bubble = msgDiv.querySelector(".bot-bubble");
         this.scrollToBottom();
-
-        this.isTyping = true;
-        let charIndex = 0;
-        const totalChars = fullText.length;
-        
-        // Dynamic speed based on length to keep it snappy
-        const speed = totalChars > 250 ? 5 : 12;
-
-        const interval = setInterval(() => {
-            if (charIndex <= totalChars) {
-                // Render formatted markdown incrementally
-                const currentSlice = fullText.substring(0, charIndex);
-                bubble.innerHTML = this.formatMarkdown(currentSlice);
-                charIndex += 4; // Step faster for futuristic responsive feel
-                this.scrollToBottom();
-            } else {
-                clearInterval(interval);
-                bubble.innerHTML = this.formatMarkdown(fullText);
-                this.isTyping = false;
-                this.saveMessage("bot", fullText, timestamp);
-                this.scrollToBottom();
-            }
-        }, speed);
+        return { bubble, msgDiv };
     },
 
-    showTypingIndicator() {
+    showTyping() {
         const container = document.getElementById("chat-messages-container");
-        if (!container) return;
-
-        let indicator = document.getElementById("chat-typing-indicator");
-        if (!indicator) {
-            indicator = document.createElement("div");
-            indicator.id = "chat-typing-indicator";
-            indicator.className = "chat-typing-indicator";
-            indicator.innerHTML = `
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <span class="typing-text">CITYBRAIN AI computing neural telemetry...</span>
-            `;
-            container.appendChild(indicator);
+        let ind = document.getElementById("chat-typing-indicator");
+        if (!ind) {
+            ind = document.createElement("div");
+            ind.id = "chat-typing-indicator";
+            ind.className = "chat-typing-indicator";
+            ind.innerHTML = `
+                <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+                <span class="typing-text">CityBrain AI is thinking...</span>`;
+            container.appendChild(ind);
         }
-        indicator.style.display = "flex";
+        ind.style.display = "flex";
         this.scrollToBottom();
     },
 
-    hideTypingIndicator() {
-        const indicator = document.getElementById("chat-typing-indicator");
-        if (indicator) {
-            indicator.style.display = "none";
-        }
+    hideTyping() {
+        const ind = document.getElementById("chat-typing-indicator");
+        if (ind) ind.style.display = "none";
     },
 
     scrollToBottom() {
-        const container = document.getElementById("chat-messages-container");
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-        }
+        const c = document.getElementById("chat-messages-container");
+        if (c) c.scrollTop = c.scrollHeight;
     },
 
+    // ─────────────────────────────────────────────────────────────────────────
+    //  HISTORY
+    // ─────────────────────────────────────────────────────────────────────────
+    pushHistory(role, text) {
+        // Gemini uses "model" not "assistant"
+        this.history.push({ role, text });
+    },
+
+    loadChatHistory() {
+        const container = document.getElementById("chat-messages-container");
+        if (!container) return;
+        container.innerHTML = "";
+
+        const stored = window.StorageManager.load(window.StorageManager.KEYS.CHAT_HISTORY, []) || [];
+        if (stored.length === 0) {
+            this.appendMessage("bot", this.WELCOME, "Just now");
+            return;
+        }
+        stored.forEach(m => this.appendMessage(m.sender || m.role, m.text, m.timestamp || ""));
+        this.scrollToBottom();
+    },
+
+    clearChat() {
+        if (!confirm("Clear all chat history?")) return;
+        this.history = [];
+        window.StorageManager.remove(window.StorageManager.KEYS.CHAT_HISTORY);
+        window.StorageManager.remove("citybrain_gemini_history");
+        const c = document.getElementById("chat-messages-container");
+        if (c) c.innerHTML = "";
+        this.appendMessage("bot", this.WELCOME, "Just now");
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  TEXT UTILS
+    // ─────────────────────────────────────────────────────────────────────────
     formatMarkdown(text) {
         if (!text) return "";
         return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\n\n/g, '<br><br>')
-            .replace(/\n• /g, '<br>• ')
-            .replace(/\n/g, '<br>');
+            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*(.*?)\*/g, "<em>$1</em>")
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\n\n/g, "<br><br>")
+            .replace(/\n•/g, "<br>•")
+            .replace(/\n(\d+\.)/g, "<br>$1")
+            .replace(/\n/g, "<br>");
+    },
+
+    escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
     }
 };
 

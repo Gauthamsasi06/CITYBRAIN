@@ -2049,3 +2049,500 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: var(--text-dim);
 }
 
+
+
+/* ==========================================================================
+   NEON NEBULA HOLOGRAPHIC CHAT THEME + GEMINI API KEY SETUP PANEL
+   ========================================================================== */
+
+/* ── Gemini Key Panel Container ─────────────────────────────────────────── */
+.gemini-key-panel {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* ── Setup Bar (collapsed state) ─────────────────────────────────────────── */
+.gemini-setup-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  background: rgba(5, 8, 17, 0.85);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.12);
+  min-height: 36px;
+}
+
+.setup-connected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setup-needs-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+.setup-connected .setup-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.setup-needs-key .setup-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+  animation: dotPulseAmber 1.5s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+@keyframes dotPulseAmber {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px #f59e0b; }
+  50% { opacity: 0.6; box-shadow: 0 0 14px #f59e0b; }
+}
+
+.setup-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.setup-label {
+  font-size: 10.5px;
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setup-connected .setup-label { color: #86efac; }
+.setup-needs-key .setup-label { color: #fcd34d; }
+
+.setup-model {
+  font-size: 9.5px;
+  font-family: 'Share Tech Mono', monospace;
+  color: rgba(148, 163, 184, 0.7);
+  letter-spacing: 0.02em;
+}
+
+.btn-setup-change {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  color: #00f0ff;
+}
+.btn-setup-change:hover {
+  background: rgba(0, 240, 255, 0.12);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.btn-setup-add {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fcd34d;
+}
+.btn-setup-add:hover {
+  background: rgba(245, 158, 11, 0.22);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* ── Key Form (expanded state) ───────────────────────────────────────────── */
+.gemini-key-form {
+  background: linear-gradient(180deg, rgba(9, 14, 28, 0.98) 0%, rgba(5, 8, 20, 0.98) 100%);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding: 14px 16px;
+}
+
+.key-form-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.key-form-info {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 6px;
+}
+.key-form-info i {
+  color: #00f0ff;
+  font-size: 13px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.key-form-info p {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.key-link {
+  color: #00f0ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 11px;
+  transition: color 0.2s;
+}
+.key-link:hover { color: #67e8f9; }
+
+.key-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gemini-key-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(3, 7, 18, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #e2e8f0;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.gemini-key-input:focus {
+  border-color: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.1), 0 0 12px rgba(0, 240, 255, 0.15);
+}
+.gemini-key-input::placeholder { color: rgba(100, 116, 139, 0.7); }
+
+.gemini-model-select {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(3, 7, 18, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: #e2e8f0;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300f0ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+.gemini-model-select:focus {
+  border-color: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.1);
+}
+.gemini-model-select option { background: #0a0f1e; color: #e2e8f0; }
+
+.key-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-key-save {
+  padding: 7px 16px;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(99, 102, 241, 0.25));
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  border-radius: 6px;
+  color: #00f0ff;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-key-save:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.38), rgba(99, 102, 241, 0.38));
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+}
+
+.btn-key-clear {
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  border-radius: 6px;
+  color: #64748b;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-key-clear:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.key-test-status {
+  font-size: 11.5px;
+  font-family: 'Share Tech Mono', monospace;
+  padding: 7px 11px;
+  border-radius: 5px;
+  line-height: 1.4;
+  width: 100%;
+  box-sizing: border-box;
+}
+.key-test-status.status-ok {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+.key-test-status.status-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+.key-test-status.status-testing {
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #67e8f9;
+  animation: testingPulse 1s ease-in-out infinite;
+}
+.key-test-status.status-warn {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fcd34d;
+}
+@keyframes testingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Status Badge: Gemini Live ───────────────────────────────────────────── */
+.badge-gemini-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.18), rgba(168, 85, 247, 0.18));
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  border-radius: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: #00f0ff;
+  white-space: nowrap;
+}
+
+.badge-offline {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: rgba(100, 116, 139, 0.15);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  border-radius: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* ── Neon Nebula Chat Messages Container ─────────────────────────────────── */
+.chat-messages {
+  background:
+    radial-gradient(ellipse at 15% 85%, rgba(168, 85, 247, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(3, 7, 18, 0.97) 0%, rgba(5, 10, 22, 0.97) 100%);
+}
+
+/* ── Holographic User Bubble ─────────────────────────────────────────────── */
+.user-bubble {
+  position: relative;
+  background: linear-gradient(135deg, #1a0533 0%, #2d1052 50%, #160a3d 100%);
+  border: 1px solid rgba(168, 85, 247, 0.55);
+  box-shadow:
+    0 0 20px rgba(168, 85, 247, 0.18),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 0 30px rgba(168, 85, 247, 0.04);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+  overflow: hidden;
+}
+.user-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: shimmerUser 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shimmerUser {
+  0% { left: -60%; }
+  100% { left: 160%; }
+}
+
+/* ── Holographic Bot Bubble ──────────────────────────────────────────────── */
+.bot-bubble {
+  position: relative;
+  background: linear-gradient(135deg, #050d1a 0%, #0a1628 60%, #061523 100%);
+  border: 1px solid rgba(0, 240, 255, 0.32);
+  box-shadow:
+    0 0 25px rgba(0, 240, 255, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(0, 240, 255, 0.025);
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 14px;
+  overflow: hidden;
+}
+.bot-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%; width: 60%; height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0, 240, 255, 0.04),
+    rgba(168, 85, 247, 0.03),
+    transparent);
+  animation: auroraBot 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes auroraBot {
+  0% { left: -80%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: 160%; opacity: 0; }
+}
+
+/* ── Streaming Cursor ────────────────────────────────────────────────────── */
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #00f0ff;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  animation: cursorBlink 0.7s ease-in-out infinite;
+  box-shadow: 0 0 6px #00f0ff;
+}
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Message Sender Labels ───────────────────────────────────────────────── */
+.msg-wrapper.bot .msg-sender {
+  background: linear-gradient(90deg, #00f0ff, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.msg-wrapper.user .msg-sender {
+  color: #c084fc;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* ── Code inside bubbles ─────────────────────────────────────────────────── */
+.bot-bubble code,
+.user-bubble code {
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #67e8f9;
+}
+.bot-bubble pre code,
+.user-bubble pre code {
+  display: block;
+  padding: 10px;
+  overflow-x: auto;
+  background: transparent;
+  border: none;
+}
+.bot-bubble pre,
+.user-bubble pre {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 6px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+/* ── Message text styling inside bubbles ─────────────────────────────────── */
+.user-bubble .msg-text { color: #ddd6fe; line-height: 1.55; font-size: 13px; }
+.bot-bubble .msg-text  { color: #cbd5e1; line-height: 1.6;  font-size: 13px; }
+
+/* ── Typing indicator dots ───────────────────────────────────────────────── */
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 2px;
+}
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00f0ff;
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; background: #818cf8; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; background: #a855f7; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ── Gemini live response animation tweak ────────────────────────────────── */
+.bot-bubble.streaming {
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow:
+    0 0 30px rgba(0, 240, 255, 0.18),
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(0, 240, 255, 0.05);
+}
