@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITYBRAIN | AI Smart City Simulator</title>
+    
+    <!-- Meta SEO & Theme -->
+    <meta name="description" content="CityBrain: AI-powered smart city simulator for urban planning, traffic control, and infrastructure prediction in Chennai, India.">
+    <meta name="theme-color" content="#050811">
+
+    <!-- External CDNs: Font Awesome, Chart.js, Leaflet.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Main Application Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Animated Futuristic Canvas Background -->
+    <canvas id="city-bg-canvas"></canvas>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <div class="app-layout">
+        <!-- ==========================================================================
+             SIDEBAR NAVIGATION
+             ========================================================================== -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div class="brand-info">
+                    <h2>CITYBRAIN</h2>
+                    <span class="brand-tagline">INTELLIGENCE FOR TOMORROW'S CITIES</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <div class="nav-section-title">Core Systems</div>
+                <a href="#overview" class="nav-item active" data-view="overview">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#chatbot" class="nav-item" data-view="chatbot">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>AI Chatbot</span>
+                </a>
+                <a href="#simulator" class="nav-item" data-view="simulator">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>What-If Simulator</span>
+                </a>
+                <a href="#map" class="nav-item" data-view="map">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <span>Smart City Map</span>
+                </a>
+                <a href="#insights" class="nav-item" data-view="insights">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>AI Insights</span>
+                </a>
+
+                <div class="nav-section-title">Urban Domains</div>
+                <a href="#traffic" class="nav-item" data-view="traffic">
+                    <i class="fa-solid fa-car"></i>
+                    <span>Traffic Intelligence</span>
+                </a>
+                <a href="#pollution" class="nav-item" data-view="pollution">
+                    <i class="fa-solid fa-smog"></i>
+                    <span>Pollution Monitoring</span>
+                </a>
+                <a href="#water" class="nav-item" data-view="water">
+                    <i class="fa-solid fa-water"></i>
+                    <span>Water Management</span>
+                </a>
+                <a href="#electricity" class="nav-item" data-view="electricity">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Electricity Management</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="city-status-pill">
+                    <div class="d-flex align-center gap-2">
+                        <span class="pulse-dot"></span>
+                        <span class="font-mono text-xs font-bold text-white">CHENNAI GRID: ONLINE</span>
+                    </div>
+                    <span class="text-xs text-green font-mono">100% OK</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==========================================================================
+             MAIN CONTENT WRAPPER
+             ========================================================================== -->
+        <main class="main-content">
+            <!-- Global Command Center Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button id="mobile-menu-btn" class="mobile-toggle" aria-label="Toggle Navigation">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="city-pill-badge">
+                        <i class="fa-solid fa-location-crosshairs text-cyan"></i>
+                        <span>METRO SECTOR: CHENNAI, INDIA</span>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="digital-clock-box">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="live-clock">--:--:-- IST</span>
+                    </div>
+                    <button class="btn-header-action" data-navigate="simulator">
+                        <i class="fa-solid fa-microchip"></i>
+                        <span>Launch Simulation</span>
+                    </button>
+                    <button class="btn-header-action" data-navigate="chatbot">
+                        <i class="fa-solid fa-terminal"></i>
+                        <span>Query Assistant</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- ==========================================================================
+                 VIEW 1: OVERVIEW DASHBOARD
+                 ========================================================================== -->
+            <section id="view-overview" class="view-section active">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-city text-cyan"></i> Chennai Smart City Command Center</h2>
+                        <p>Real-time civic telemetry, algorithmic trend projection, and metropolitan health monitoring.</p>
+                    </div>
+                    <span class="badge badge-green"><i class="fa-solid fa-tower-broadcast"></i> Live Telemetry Feed</span>
+                </div>
+
+                <!-- 6 Metric Dynamic Cards -->
+                <div class="metrics-grid-6">
+                    <!-- Metric 1: Population -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Metropolitan Population</span>
+                            <div class="metric-icon-box" style="background: rgba(0, 240, 255, 0.15); color: var(--cyan-neon);">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value-box">
+                            <span id="metric-pop-val" class="metric-number">11.50M</span>
+                            <span class="metric-trend trend-stable"><i class="fa-solid fa-arrow-up"></i> +1.4%</span>
+                        </div>
+                        <div class="metric-progress-track">
+                            <div class="progress-fill bg-cyan" style="width: 72%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: Traffic Congestion -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Traffic Congestion</span>
+                            <div class="metric-icon-box" style="background: rgba(244, 63, 94, 0.15); color: var(--red-neon);">
+                                <i class="fa-solid fa-car-side"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value-box">
+                            <span id="metric-traffic-val" class="metric-number">68%</span>
+                            <span class="metric-trend trend-up"><i class="fa-solid fa-arrow-up"></i> High Load</span>
+                        </div>
+                        <div class="metric-progress-track">
+                            <div id="metric-traffic-bar" class="progress-fill bg-yellow" style="width: 68%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: AQI -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Air Quality Index (AQI)</span>
+                            <div class="metric-icon-box" style="background: rgba(251, 191, 36, 0.15); color: var(--yellow-neon);">
+                                <i class="fa-solid fa-wind"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value-box">
+                            <span id="metric-aqi-val" class="metric-number">142</span>
+                            <span class="metric-trend trend-stable">Moderate</span>
+                        </div>
+                        <div class="metric-progress-track">
+                            <div id="metric-aqi-bar" class="progress-fill bg-yellow" style="width: 48%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 4: Water Consumption -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Daily Water Draw</span>
+                            <div class="metric-icon-box" style="background: rgba(56, 189, 248, 0.15); color: var(--blue-electric);">
+                                <i class="fa-solid fa-faucet-drip"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value-box">
+                            <span id="metric-water-val" class="metric-number">985 MLD</span>
+                            <span class="metric-trend trend-stable">94% Cap</span>
+                        </div>
+                        <div class="metric-progress-track">
+                            <div id="metric-water-bar" class="progress-fill bg-cyan" style="width: 82%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 5: Electricity Demand -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Electricity Grid Demand</span>
+                            <div class="metric-icon-box" style="background: rgba(168, 85, 247, 0.15); color: var(--purple-neon);">
+                                <i class="fa-solid fa-bolt-lightning"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value-box">
+                            <span id="metric-electricity-val" class="metric-number">3,920 MW</span>
+                            <span class="metric-trend trend-stable">87% Load</span>
+                        </div>
+                        <div class="metric-progress-track">
+                            <div id="metric-ele-bar" class="progress-fill bg-cyan" style="width: 87%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 6: Infrastructure Health -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Infrastructure Health</span>
+                            <div class="metric-icon-box" style="background: rgba(16, 185, 129, 0.15); color: var(--green-neon);">
+                                <i class="fa-solid fa-shield-heart"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value-box">
+                            <span id="metric-health-val" class="metric-number">74 / 100</span>
+                            <span class="metric-trend trend-down">Stable</span>
+                        </div>
+                        <div class="metric-progress-track">
+                            <div id="metric-health-bar" class="progress-fill bg-green" style="width: 74%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts 2x2 Grid -->
+                <div class="charts-grid-2">
+                    <!-- Chart 1: Traffic Trend Line Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-chart-line text-cyan"></i> 24-Hour Traffic Congestion Trend</h3>
+                            <span class="badge badge-yellow">Peak Hour Active</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="overviewTrafficChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Pollution Trend Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-smog text-yellow"></i> Atmospheric Particulate AQI Curve</h3>
+                            <span class="badge badge-yellow">Station Average</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="overviewPollutionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 3: Water Consumption Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-water text-blue"></i> Water Consumption Flow Rate (MLD)</h3>
+                            <span class="badge badge-green">Supply Balanced</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="overviewWaterChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 4: Electricity Demand Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-bolt text-purple"></i> Peak Electricity Grid Draw (MW)</h3>
+                            <span class="badge badge-green">4500 MW Ceiling</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="overviewElectricityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subsystems Health & Alerts Table -->
+                <div class="charts-grid-2">
+                    <!-- Subsystems Radar Comparison -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-network-wired text-cyan"></i> Subsystems Health Index</h3>
+                            <span class="badge badge-green">7 Sub-sectors</span>
+                        </div>
+                        <div class="chart-canvas-container" style="height: 280px;">
+                            <canvas id="overviewInfrastructureChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Critical City Alerts -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-bell text-red"></i> Critical Metropolitan Alerts</h3>
+                            <span class="badge badge-red">Live Dispatch</span>
+                        </div>
+                        <div id="overview-alerts-container" class="overview-alerts-scroll" style="max-height: 280px; overflow-y: auto;">
+                            <!-- Populated via dashboard.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Subsystems Telemetry Table -->
+                <div class="glass-panel chart-card">
+                    <div class="chart-card-header">
+                        <h3><i class="fa-solid fa-list-check text-cyan"></i> Chennai Civic Subsystems Telemetry</h3>
+                        <span class="badge badge-cyan">Automated Mesh</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="cyber-table">
+                            <thead>
+                                <tr>
+                                    <th>Subsystem Domain</th>
+                                    <th>Health Progress</th>
+                                    <th>Index Score</th>
+                                    <th>Operational State</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subsystems-table-body">
+                                <!-- Populated by dashboard.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 2: AI CHATBOT INTERFACE
+                 ========================================================================== -->
+            <section id="view-chatbot" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-brain text-cyan"></i> CITYBRAIN AI Assistant</h2>
+                        <p>Natural language queries for live traffic forecasts, what-if scenarios, and smart city intelligence.</p>
+                    </div>
+                    <div class="d-flex align-center gap-2">
+                        <span id="llm-mode-badge" class="badge-offline">Offline Rule Engine</span>
+                        <button id="btn-open-llm-settings" class="btn-cyber-secondary">
+                            <i class="fa-solid fa-gear"></i> API Endpoint
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel chatbot-wrapper">
+                    <!-- Chat Header -->
+                    <div class="chat-header-bar">
+                        <div class="bot-profile">
+                            <div class="bot-avatar-box">
+                                <i class="fa-solid fa-microchip"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-white">CITYBRAIN AI ASSISTANT</h4>
+                                <span class="bot-status-desc">
+                                    <span class="pulse-dot"></span> Chennai Metropolitan Neural Core Active
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="chat-actions">
+                            <button id="btn-clear-chat" class="btn-cyber-secondary" title="Clear Chat History">
+                                <i class="fa-solid fa-trash-can"></i> Clear Chat
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Scroll Area -->
+                    <div id="chat-messages-container" class="chat-messages">
+                        <!-- Messages dynamically rendered by chatbot.js -->
+                    </div>
+
+                    <!-- Suggested Query Chips -->
+                    <div class="chat-suggestions-bar">
+                        <span class="text-xs text-muted" style="align-self: center;">Suggested:</span>
+                        <button class="suggestion-chip" data-query="What is the traffic condition in Chennai?">Traffic condition?</button>
+                        <button class="suggestion-chip" data-query="Predict traffic at 6 PM">Predict traffic at 6 PM</button>
+                        <button class="suggestion-chip" data-query="What happens if population increases by 20%?">What if population +20%?</button>
+                        <button class="suggestion-chip" data-query="Which city areas have high pollution?">High pollution areas?</button>
+                        <button class="suggestion-chip" data-query="What if vehicle usage decreases by 15%?">What if vehicle usage -15%?</button>
+                        <button class="suggestion-chip" data-query="Predict tomorrow's water demand">Tomorrow's water demand?</button>
+                        <button class="suggestion-chip" data-query="How can we reduce electricity consumption?">Reduce electricity?</button>
+                    </div>
+
+                    <!-- Chat Input Field -->
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" class="chat-input-field" placeholder="Ask CityBrain AI about traffic, pollution, water, electricity, or run what-if queries..." autocomplete="off">
+                        <button id="btn-chat-send" class="btn-chat-send">
+                            <span>TRANSMIT</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 3: WHAT-IF SIMULATOR
+                 ========================================================================== -->
+            <section id="view-simulator" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-sliders text-cyan"></i> Urban What-If Simulation Engine</h2>
+                        <p>Simulate policy changes, demographic shifts, and infrastructure interventions on Chennai's ecosystem.</p>
+                    </div>
+                    <span class="badge badge-cyan"><i class="fa-solid fa-flask"></i> Mathematical Modeling Mode</span>
+                </div>
+
+                <div class="sim-disclaimer-banner">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span><strong>Illustrative Simulation Engine:</strong> Calculations use multi-variable urban cascade formulas modeled on Chennai parameters. For planning and exploratory analysis.</span>
+                </div>
+
+                <div class="simulator-layout">
+                    <!-- Control Sliders Panel -->
+                    <div class="glass-panel simulator-controls">
+                        <div class="d-flex justify-between align-center">
+                            <h3 class="text-white text-sm"><i class="fa-solid fa-sliders text-cyan"></i> Policy Parameters</h3>
+                            <button id="btn-reset-simulation" class="btn-cyber-secondary" style="padding: 4px 8px; font-size: 10px;">Reset 0%</button>
+                        </div>
+
+                        <!-- 1. Population Growth % -->
+                        <div class="sim-slider-group">
+                            <div class="sim-slider-label">
+                                <span><i class="fa-solid fa-users text-cyan"></i> Population Growth</span>
+                                <span id="sim-pop-slider-val" class="sim-slider-val">0%</span>
+                            </div>
+                            <input type="range" id="sim-pop-slider" min="-10" max="50" value="0" step="1">
+                            <span class="text-xs text-muted">-10% to +50% range</span>
+                        </div>
+
+                        <!-- 2. Vehicle Usage % -->
+                        <div class="sim-slider-group">
+                            <div class="sim-slider-label">
+                                <span><i class="fa-solid fa-car text-cyan"></i> Vehicle Usage</span>
+                                <span id="sim-veh-slider-val" class="sim-slider-val">0%</span>
+                            </div>
+                            <input type="range" id="sim-veh-slider" min="-40" max="50" value="0" step="1">
+                            <span class="text-xs text-muted">-40% to +50% range</span>
+                        </div>
+
+                        <!-- 3. Road Capacity % -->
+                        <div class="sim-slider-group">
+                            <div class="sim-slider-label">
+                                <span><i class="fa-solid fa-road text-cyan"></i> Road Capacity</span>
+                                <span id="sim-cap-slider-val" class="sim-slider-val">0%</span>
+                            </div>
+                            <input type="range" id="sim-cap-slider" min="-20" max="50" value="0" step="1">
+                            <span class="text-xs text-muted">-20% to +50% range</span>
+                        </div>
+
+                        <!-- 4. Water Supply % -->
+                        <div class="sim-slider-group">
+                            <div class="sim-slider-label">
+                                <span><i class="fa-solid fa-water text-blue"></i> Water Supply</span>
+                                <span id="sim-wat-slider-val" class="sim-slider-val">0%</span>
+                            </div>
+                            <input type="range" id="sim-wat-slider" min="-40" max="50" value="0" step="1">
+                            <span class="text-xs text-muted">-40% to +50% range</span>
+                        </div>
+
+                        <!-- 5. Electricity Demand % -->
+                        <div class="sim-slider-group">
+                            <div class="sim-slider-label">
+                                <span><i class="fa-solid fa-bolt text-purple"></i> Electricity Demand</span>
+                                <span id="sim-ele-slider-val" class="sim-slider-val">0%</span>
+                            </div>
+                            <input type="range" id="sim-ele-slider" min="-30" max="50" value="0" step="1">
+                            <span class="text-xs text-muted">-30% to +50% range</span>
+                        </div>
+
+                        <!-- 6. Pollution Control % -->
+                        <div class="sim-slider-group">
+                            <div class="sim-slider-label">
+                                <span><i class="fa-solid fa-leaf text-green"></i> Pollution Control</span>
+                                <span id="sim-pol-slider-val" class="sim-slider-val">0%</span>
+                            </div>
+                            <input type="range" id="sim-pol-slider" min="0" max="80" value="0" step="1">
+                            <span class="text-xs text-muted">0% to +80% mitigation</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="sim-action-buttons">
+                            <button id="btn-run-simulation" class="btn-cyber-primary">
+                                <i class="fa-solid fa-play"></i> EXECUTE SIMULATION
+                            </button>
+                        </div>
+
+                        <!-- Preset Scenarios -->
+                        <div class="mt-2">
+                            <span class="text-xs text-muted font-bold">PRESET SCENARIOS:</span>
+                            <div class="sim-preset-chips">
+                                <button class="preset-chip btn-preset-scenario" data-preset="green-mobility">🌱 Green Mobility</button>
+                                <button class="preset-chip btn-preset-scenario" data-preset="tech-boom">⚡ OMR Tech Boom</button>
+                                <button class="preset-chip btn-preset-scenario" data-preset="monsoon-drought">☀️ Heatwave Crisis</button>
+                                <button class="preset-chip btn-preset-scenario" data-preset="smart-transit">🚀 Smart Grid 2030</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Results Stage -->
+                    <div class="sim-results-pane">
+                        <!-- Before vs After Metrics Grid -->
+                        <div class="sim-delta-grid">
+                            <!-- Traffic -->
+                            <div class="sim-delta-card">
+                                <h5>TRAFFIC CONGESTION</h5>
+                                <div class="delta-compare">
+                                    <span id="res-traffic-cur" class="text-muted">68%</span>
+                                    <i class="fa-solid fa-arrow-right text-xs text-dim"></i>
+                                    <span id="res-traffic-sim" class="text-white">68%</span>
+                                </div>
+                                <div class="mt-2 d-flex justify-between align-center">
+                                    <span class="text-xs text-muted">Delta</span>
+                                    <span id="res-traffic-diff" class="metric-delta delta-positive">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- AQI -->
+                            <div class="sim-delta-card">
+                                <h5>AIR QUALITY (AQI)</h5>
+                                <div class="delta-compare">
+                                    <span id="res-aqi-cur" class="text-muted">142</span>
+                                    <i class="fa-solid fa-arrow-right text-xs text-dim"></i>
+                                    <span id="res-aqi-sim" class="text-white">142</span>
+                                </div>
+                                <div class="mt-2 d-flex justify-between align-center">
+                                    <span class="text-xs text-muted">Delta</span>
+                                    <span id="res-aqi-diff" class="metric-delta delta-positive">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Water -->
+                            <div class="sim-delta-card">
+                                <h5>WATER DEMAND</h5>
+                                <div class="delta-compare">
+                                    <span id="res-water-cur" class="text-muted">985 MLD</span>
+                                    <i class="fa-solid fa-arrow-right text-xs text-dim"></i>
+                                    <span id="res-water-sim" class="text-white">985 MLD</span>
+                                </div>
+                                <div class="mt-2 d-flex justify-between align-center">
+                                    <span class="text-xs text-muted">Delta</span>
+                                    <span id="res-water-diff" class="metric-delta delta-positive">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Electricity -->
+                            <div class="sim-delta-card">
+                                <h5>ELECTRICITY DEMAND</h5>
+                                <div class="delta-compare">
+                                    <span id="res-ele-cur" class="text-muted">3,920 MW</span>
+                                    <i class="fa-solid fa-arrow-right text-xs text-dim"></i>
+                                    <span id="res-ele-sim" class="text-white">3,920 MW</span>
+                                </div>
+                                <div class="mt-2 d-flex justify-between align-center">
+                                    <span class="text-xs text-muted">Delta</span>
+                                    <span id="res-ele-diff" class="metric-delta delta-positive">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Civic Health Score -->
+                            <div class="sim-delta-card">
+                                <h5>INFRASTRUCTURE SCORE</h5>
+                                <div class="delta-compare">
+                                    <span id="res-health-cur" class="text-muted">74 / 100</span>
+                                    <i class="fa-solid fa-arrow-right text-xs text-dim"></i>
+                                    <span id="res-health-sim" class="text-white">74 / 100</span>
+                                </div>
+                                <div class="mt-2 d-flex justify-between align-center">
+                                    <span class="text-xs text-muted">Delta</span>
+                                    <span id="res-health-diff" class="metric-delta delta-positive">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Before and After Comparison Chart -->
+                        <div class="glass-panel chart-card">
+                            <div class="chart-card-header">
+                                <h3><i class="fa-solid fa-chart-column text-cyan"></i> Before vs After Scenario Comparison</h3>
+                                <span class="badge badge-cyan">Normalized Scale</span>
+                            </div>
+                            <div class="chart-canvas-container" style="height: 240px;">
+                                <canvas id="simComparisonChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic AI Verdict Banner -->
+                        <div id="sim-ai-verdict" class="sim-verdict-box verdict-positive">
+                            RESILIENT & SUSTAINABLE: Urban ecosystem metrics demonstrate robust resilience with high livability indicators.
+                        </div>
+
+                        <!-- Detailed AI Findings & Recommendations -->
+                        <div class="sim-narrative-grid">
+                            <div class="glass-panel narrative-card">
+                                <h4><i class="fa-solid fa-magnifying-glass-chart"></i> AI Impact Findings</h4>
+                                <ul id="sim-ai-findings" style="padding-left: 0;">
+                                    <!-- Populated by simulation.js -->
+                                </ul>
+                            </div>
+
+                            <div class="glass-panel narrative-card">
+                                <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Strategic Recommendations</h4>
+                                <ul id="sim-ai-recommendations" style="padding-left: 0;">
+                                    <!-- Populated by simulation.js -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Simulation History Drawer -->
+                        <div class="glass-panel sim-history-pane">
+                            <div class="d-flex justify-between align-center mb-2">
+                                <h4 class="text-white text-sm"><i class="fa-solid fa-clock-rotate-left text-cyan"></i> Simulation Run History</h4>
+                                <button id="btn-clear-sim-history" class="btn-cyber-secondary" style="padding: 4px 8px; font-size: 10px;">Clear Log</button>
+                            </div>
+                            <div id="sim-history-list">
+                                <!-- Populated by simulation.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 4: SMART CITY MAP (LEAFLET)
+                 ========================================================================== -->
+            <section id="view-map" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-map-location-dot text-cyan"></i> Chennai Interactive Geospatial Map</h2>
+                        <p>Real-time sector monitoring: Anna Nagar, T. Nagar, Guindy, Velachery, Tambaram, Perambur, Adyar, OMR.</p>
+                    </div>
+                    <span class="badge badge-yellow"><i class="fa-solid fa-satellite"></i> GIS Grid Connected</span>
+                </div>
+
+                <div class="map-view-wrapper">
+                    <!-- Map Canvas & Filter Bar -->
+                    <div class="glass-panel map-card">
+                        <div class="map-controls-bar">
+                            <div class="map-filter-group">
+                                <button class="map-filter-btn active" data-filter="all">All Layers</button>
+                                <button class="map-filter-btn" data-filter="traffic">Traffic Congestion</button>
+                                <button class="map-filter-btn" data-filter="pollution">Air Pollution (AQI)</button>
+                                <button class="map-filter-btn" data-filter="water">Water Demand</button>
+                                <button class="map-filter-btn" data-filter="electricity">Electricity Load</button>
+                            </div>
+                            <span class="text-xs text-muted"><i class="fa-solid fa-circle-dot text-green"></i> 10 Monitored Hotspots</span>
+                        </div>
+                        <div id="leaflet-map"></div>
+                    </div>
+
+                    <!-- Selected Zone Inspector -->
+                    <div class="glass-panel inspector-card" id="zone-inspector-panel">
+                        <!-- Populated dynamically by maps.js -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 5: TRAFFIC INTELLIGENCE
+                 ========================================================================== -->
+            <section id="view-traffic" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-car text-cyan"></i> Traffic Intelligence & Congestion Control</h2>
+                        <p>Vehicle density analysis, peak hour identification, and adaptive signal corridor optimization.</p>
+                    </div>
+                    <span class="badge badge-red">Peak Hour Bottlenecks</span>
+                </div>
+
+                <!-- Congestion Indicators Legend -->
+                <div class="d-flex gap-4 align-center p-3 glass-panel" style="padding: 12px 18px;">
+                    <span class="font-bold text-xs text-muted">CONGESTION SCALE:</span>
+                    <div class="d-flex align-center gap-1"><span class="status-dot dot-green"></span> <span class="text-xs">Green (&lt;60% Low)</span></div>
+                    <div class="d-flex align-center gap-1"><span class="status-dot dot-yellow"></span> <span class="text-xs">Yellow (60-75% Moderate)</span></div>
+                    <div class="d-flex align-center gap-1"><span class="status-dot dot-red"></span> <span class="text-xs">Red (&gt;75% Severe Gridlock)</span></div>
+                </div>
+
+                <!-- Traffic Arterials Chart & Interactive Signal Control -->
+                <div class="charts-grid-2">
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-chart-bar text-cyan"></i> Primary Arterial Roads Congestion</h3>
+                            <span class="badge badge-cyan">Chennai Arterials</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="trafficArterialChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-traffic-light text-yellow"></i> AI Adaptive Traffic Light System</h3>
+                            <span id="adaptive-signal-status" class="badge badge-green">ACTIVE: AI Synchronized Corridor</span>
+                        </div>
+                        <p class="text-muted text-xs mb-3">Dynamically adjust green split timings across Anna Salai, Kathipara junction, and OMR cyber expressway.</p>
+                        
+                        <div class="d-flex align-center justify-between p-3 mb-3" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px; border: 1px solid var(--border-subtle); padding: 12px;">
+                            <div>
+                                <h4 class="text-white text-xs">Enable Neural Signal Timing</h4>
+                                <span class="text-muted text-xs">Reduces idling emissions by 14%</span>
+                            </div>
+                            <input type="checkbox" id="toggle-adaptive-signals" checked style="width: 20px; height: 20px; cursor: pointer;">
+                        </div>
+
+                        <div id="adaptive-signal-impact" class="p-3 text-xs" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px;">
+                            <strong>🟢 Adaptive Control Engaged:</strong> 180 signals synchronized. Corridor average speed increased by <strong>+14%</strong>. Kathipara bottleneck delays reduced by 12 minutes.
+                        </div>
+
+                        <div class="mt-3">
+                            <h5 class="text-xs text-muted mb-2">COMMUTER BOTTLENECK DISPATCH:</h5>
+                            <ul class="text-xs text-muted" style="padding-left: 16px; line-height: 1.8;">
+                                <li>Kathipara Flyover: Heavy volume from airport & GST Rd.</li>
+                                <li>OMR Perungudi Toll: Evening tech egress peak (17:30 - 20:30).</li>
+                                <li>Koyambedu Roundabout: Heavy logistics container slow-down.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arterial Details Table -->
+                <div class="glass-panel chart-card">
+                    <div class="chart-card-header">
+                        <h3><i class="fa-solid fa-road text-cyan"></i> Chennai Arterial Corridors Live Status</h3>
+                        <span class="badge badge-cyan">Real-time Radar</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="cyber-table">
+                            <thead>
+                                <tr>
+                                    <th>Arterial Corridor</th>
+                                    <th>Length</th>
+                                    <th>Current Congestion</th>
+                                    <th>Average Velocity</th>
+                                    <th>Status Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody id="traffic-arterials-tbody">
+                                <!-- Populated by dashboard.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 6: POLLUTION MONITORING
+                 ========================================================================== -->
+            <section id="view-pollution" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-smog text-yellow"></i> Atmospheric Pollution & AQI Intelligence</h2>
+                        <p>Air Quality Index monitoring, particulate matter composition, and hotspot mitigation.</p>
+                    </div>
+                    <span class="badge badge-yellow">Metro AQI: 142 Moderate</span>
+                </div>
+
+                <div class="charts-grid-2">
+                    <!-- Pollution Donut Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-pie-chart text-cyan"></i> Particulate Emission Breakdown</h3>
+                            <span class="badge badge-cyan">Sources Distribution</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="pollutionDonutChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Pollution Hotspots Leaderboard -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-fire-flame-curved text-red"></i> Pollution Hotspots Leaderboard</h3>
+                            <span class="badge badge-red">High Risk Zones</span>
+                        </div>
+                        <div id="pollution-hotspots-container" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Populated by dashboard.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EPA AQI Scale Guide & AI Reduction Recommendations -->
+                <div class="charts-grid-2">
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-gauge-high text-green"></i> AQI Standards Reference</h3>
+                        </div>
+                        <div class="d-flex flex-column gap-2 text-xs">
+                            <div class="d-flex justify-between p-2" style="background: rgba(16, 185, 129, 0.15); border-radius: 4px;">
+                                <strong class="text-green">0 - 50: Good</strong>
+                                <span>Minimal atmospheric health impact</span>
+                            </div>
+                            <div class="d-flex justify-between p-2" style="background: rgba(56, 189, 248, 0.15); border-radius: 4px;">
+                                <strong class="text-blue">51 - 100: Moderate</strong>
+                                <span>Acceptable quality for general populace</span>
+                            </div>
+                            <div class="d-flex justify-between p-2" style="background: rgba(251, 191, 36, 0.15); border-radius: 4px;">
+                                <strong class="text-yellow">101 - 200: Unhealthy for Sensitive</strong>
+                                <span>Respiratory discomfort in vulnerable groups</span>
+                            </div>
+                            <div class="d-flex justify-between p-2" style="background: rgba(244, 63, 94, 0.15); border-radius: 4px;">
+                                <strong class="text-red">201+: Hazardous</strong>
+                                <span>Emergency civic health warnings</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-seedling text-green"></i> Clean Air Action Plan</h3>
+                        </div>
+                        <ul class="text-xs text-muted" style="padding-left: 16px; line-height: 1.9;">
+                            <li><strong class="text-white">Anti-Smog Water Cannons:</strong> Deployed at Koyambedu market & Parrys Port terminal.</li>
+                            <li><strong class="text-white">Electric Transit Corridor:</strong> 500 electric MTC buses deployed on Anna Salai & Poonamallee corridors.</li>
+                            <li><strong class="text-white">Urban Forestry:</strong> 35 Miyawaki urban forest pockets planted near Adyar riverbank & Velachery lake.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 7: WATER MANAGEMENT
+                 ========================================================================== -->
+            <section id="view-water" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-water text-blue"></i> Water Management & Reservoir Reserves</h2>
+                        <p>Desalination yield tracking, reservoir storage capacity, and water deficit prediction.</p>
+                    </div>
+                    <span class="badge badge-green">985 MLD Daily Draw</span>
+                </div>
+
+                <div class="charts-grid-2">
+                    <!-- Reservoirs Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-glass-water-droplet text-blue"></i> Major Reservoir Storage vs Capacity</h3>
+                            <span class="badge badge-cyan">Chennai Water Metro</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="waterReservoirChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Desalination & Shortage Simulation -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> Supply vs Demand Balance</h3>
+                            <span class="badge badge-green">Surplus Margin +65 MLD</span>
+                        </div>
+                        <p class="text-xs text-muted mb-2">Desalination plants (Nemmeli & Minjur) contribute 250 MLD steady state directly to southern residential pipelines.</p>
+                        
+                        <div class="d-flex justify-between p-2 mb-2" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px;">
+                            <span class="text-xs">Chembarambakkam Reservoir:</span>
+                            <strong class="text-cyan text-xs">3,120 / 3,645 mcft (85%)</strong>
+                        </div>
+                        <div class="d-flex justify-between p-2 mb-2" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px;">
+                            <span class="text-xs">Poondi Reservoir:</span>
+                            <strong class="text-cyan text-xs">2,450 / 3,231 mcft (76%)</strong>
+                        </div>
+                        <div class="d-flex justify-between p-2 mb-3" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px;">
+                            <span class="text-xs">Nemmeli Desalination Output:</span>
+                            <strong class="text-green text-xs">150 MLD (100% Cap)</strong>
+                        </div>
+
+                        <button id="btn-water-desal-boost" class="btn-cyber-primary text-xs" style="padding: 8px 12px;">
+                            <i class="fa-solid fa-bolt"></i> Engage Desalination Aux Booster (+45 MLD)
+                        </button>
+                        <div id="water-boost-output"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 8: ELECTRICITY MANAGEMENT
+                 ========================================================================== -->
+            <section id="view-electricity" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-bolt text-purple"></i> Electricity Grid & Energy Intelligence</h2>
+                        <p>Real-time MW consumption, clean energy source mix, and automated load-shedding safeguards.</p>
+                    </div>
+                    <span class="badge badge-green">Grid Frequency: 50.02 Hz</span>
+                </div>
+
+                <div class="charts-grid-2">
+                    <!-- Energy Mix Chart -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-atom text-purple"></i> Grid Power Generation Sources</h3>
+                            <span class="badge badge-purple">TANGEDCO Grid</span>
+                        </div>
+                        <div class="chart-canvas-container">
+                            <canvas id="energyMixChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Power Shortage & Peak Management -->
+                    <div class="glass-panel chart-card">
+                        <div class="chart-card-header">
+                            <h3><i class="fa-solid fa-battery-half text-yellow"></i> Substation Load & Reserve Margin</h3>
+                            <span class="badge badge-green">13% Reserve Buffer</span>
+                        </div>
+                        <p class="text-xs text-muted mb-2">Peak industrial and AC cooling load occurs between 14:00 - 16:30 and 19:00 - 22:00.</p>
+                        
+                        <div class="d-flex justify-between p-2 mb-2" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px;">
+                            <span class="text-xs">T. Nagar Sector Substation:</span>
+                            <strong class="text-yellow text-xs">460 MW (91% Peak)</strong>
+                        </div>
+                        <div class="d-flex justify-between p-2 mb-2" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px;">
+                            <span class="text-xs">OMR Cyber Grid:</span>
+                            <strong class="text-cyan text-xs">520 MW (86% Peak)</strong>
+                        </div>
+                        <div class="d-flex justify-between p-2 mb-3" style="background: rgba(15, 23, 42, 0.7); border-radius: 6px;">
+                            <span class="text-xs">North Chennai Thermal Feed:</span>
+                            <strong class="text-white text-xs">1,880 MW Base</strong>
+                        </div>
+
+                        <button id="btn-sim-load-shed" class="btn-cyber-primary text-xs" style="padding: 8px 12px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(56, 189, 248, 0.8));">
+                            <i class="fa-solid fa-shield-halved"></i> Simulate Smart Load-Shedding Safeguard
+                        </button>
+                        <div id="load-shed-output"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 VIEW 9: AI INSIGHTS
+                 ========================================================================== -->
+            <section id="view-insights" class="view-section">
+                <div class="section-hero">
+                    <div>
+                        <h2><i class="fa-solid fa-lightbulb text-cyan"></i> Autonomous AI City Insights</h2>
+                        <p>Cross-domain causality analytics, predictive hazard alerts, and strategic civic directives.</p>
+                    </div>
+                    <span class="badge badge-cyan"><i class="fa-solid fa-microchip"></i> Neural Synthesis</span>
+                </div>
+
+                <!-- Domain Warnings 4-Grid -->
+                <div class="metrics-grid-4" id="insights-domain-warnings" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                    <!-- Populated by script.js -->
+                </div>
+
+                <!-- AI Strategic Recommendations -->
+                <div class="glass-panel chart-card">
+                    <div class="chart-card-header">
+                        <h3><i class="fa-solid fa-crosshairs text-green"></i> High-Priority Strategic Directives</h3>
+                        <span class="badge badge-green">Active Policy Buffer</span>
+                    </div>
+                    <div id="insights-recommendations-list" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Populated dynamically by script.js -->
+                    </div>
+                </div>
+
+                <!-- Critical Alerts Log -->
+                <div class="glass-panel chart-card">
+                    <div class="chart-card-header">
+                        <h3><i class="fa-solid fa-triangle-exclamation text-red"></i> Incident & Warning Feed</h3>
+                        <span class="badge badge-red">Dynamic Cascade</span>
+                    </div>
+                    <div id="insights-alerts-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Populated by script.js -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==========================================================================
+         CONFIGURABLE LLM MODAL (OFFLINE DEMO DEFAULT)
+         ========================================================================== -->
+    <div id="llm-config-modal" class="cyber-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-white text-sm"><i class="fa-solid fa-robot text-cyan"></i> LLM Endpoint Integration</h3>
+                <button id="btn-close-llm-modal" class="btn-close-modal">&times;</button>
+            </div>
+            
+            <p class="text-xs text-muted mb-3">
+                CityBrain operates with an autonomous built-in **Offline Rule Engine** with zero external dependencies. You can optionally connect your custom OpenAI-compatible API endpoint here.
+            </p>
+
+            <div class="form-group d-flex align-center justify-between p-2 mb-3" style="background: rgba(15, 23, 42, 0.8); border-radius: 4px;">
+                <label for="llm-offline-toggle" style="margin-bottom: 0;">Force Offline Demo Engine (Recommended)</label>
+                <input type="checkbox" id="llm-offline-toggle" checked style="width: 18px; height: 18px;">
+            </div>
+
+            <div class="form-group">
+                <label for="llm-endpoint-input">API Endpoint URL (e.g., https://api.openai.com/v1/chat/completions)</label>
+                <input type="text" id="llm-endpoint-input" class="form-input" placeholder="https://api.openai.com/v1/chat/completions">
+            </div>
+
+            <div class="form-group">
+                <label for="llm-model-input">Model Name</label>
+                <input type="text" id="llm-model-input" class="form-input" placeholder="gpt-4o-mini">
+            </div>
+
+            <div class="form-group">
+                <label for="llm-key-input">API Key (Stored only in local session memory, never transmitted)</label>
+                <input type="password" id="llm-key-input" class="form-input" placeholder="sk-...">
+            </div>
+
+            <div class="d-flex justify-between gap-2 mt-3">
+                <button id="btn-save-llm-config" class="btn-cyber-primary">
+                    <i class="fa-solid fa-check"></i> Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Modules (Direct root directory loading) -->
+    <script src="data.js"></script>
+    <script src="simulation.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="maps.js"></script>
+    <script src="chatbot.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
