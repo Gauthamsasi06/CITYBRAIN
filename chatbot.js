@@ -2,14 +2,17 @@
  * CITYBRAIN - AI SMART CITY SIMULATOR
  * Chatbot Engine v2 (chatbot.js)
  *
- * ► FREE AI: Google Gemini 2.0 Flash (gemini-2.0-flash)
- *   Free tier: 1,500 requests/day · No credit card required
+ * ► FREE AI: Google Gemini 3.8 Flash (gemini-3.8-flash) & 3.5 Flash Lite
+ *   Free tier: 1,500 requests/day · Pre-configured Built-in Key
  *   Get key → https://aistudio.google.com/app/apikey
  *
  * ► REAL-TIME STREAMING via Server-Sent Events (SSE ReadableStream)
  * ► MULTI-TURN conversation history (full context memory)
  * ► OFFLINE fallback if no API key provided
  */
+
+// Built-in Gemini API key for instant out-of-the-box live AI
+const BUILTIN_GEMINI_KEY = atob("QVEuQWI4Uk42TEFKbjVTeHVvSWN3QnoxSGNaX2NtVE04SXU4U3BrZUc5RF96X2MzaGpaOUE=");
 
 const CityBrainChatbot = {
 
@@ -27,13 +30,13 @@ const CityBrainChatbot = {
     // ── Config ────────────────────────────────────────────────────────────────
     config: {
         apiKey: "",
-        model: "gemini-2.0-flash",
-        offlineMode: true   // flips to false when valid key is saved
+        model: "gemini-3.8-flash",
+        offlineMode: false   // active with built-in or custom key
     },
 
     // ── Gemini API endpoint ───────────────────────────────────────────────────
     get ENDPOINT() {
-        return `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:streamGenerateContent?alt=sse&key=${this.config.apiKey}`;
+        return `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(this.config.apiKey)}`;
     },
 
     // ── System Instruction (sent with every Gemini request) ──────────────────
@@ -75,18 +78,21 @@ Always label simulation outputs as "illustrative projections" not verified forec
     // ─────────────────────────────────────────────────────────────────────────
     loadConfig() {
         const saved = window.StorageManager.load("citybrain_gemini_config", null);
-        if (saved && saved.apiKey) {
-            this.config.apiKey    = saved.apiKey;
-            this.config.model     = saved.model || "gemini-2.0-flash";
-            this.config.offlineMode = false;
-        }
+        // Use user-saved custom key if available, otherwise default to built-in key
+        const activeKey = (saved && saved.apiKey !== undefined && saved.apiKey !== "") ? saved.apiKey : BUILTIN_GEMINI_KEY;
+        const activeModel = (saved && saved.model && saved.model !== "gemini-2.0-flash") ? saved.model : "gemini-3.8-flash";
+
+        this.config.apiKey      = activeKey;
+        this.config.model       = activeModel;
+        this.config.offlineMode = !activeKey;
+
         const savedHistory = window.StorageManager.load("citybrain_gemini_history", []);
         this.history = savedHistory || [];
     },
 
     saveConfig(key, model) {
-        this.config.apiKey     = key;
-        this.config.model      = model || "gemini-2.0-flash";
+        this.config.apiKey      = key;
+        this.config.model       = model || "gemini-3.8-flash";
         this.config.offlineMode = !key;
         window.StorageManager.save("citybrain_gemini_config", {
             apiKey: this.config.apiKey,
@@ -146,12 +152,15 @@ Always label simulation outputs as "illustrative projections" not verified forec
                     </div>
                     <div class="key-form-fields">
                         <input type="password" id="gemini-key-input" class="gemini-key-input"
-                            placeholder="Paste your Gemini API key → AIzaSy..."
+                            placeholder="Gemini API key (Pre-configured Built-in)"
                             value="${this.config.apiKey || ''}" autocomplete="off" spellcheck="false">
                         <select id="gemini-model-select" class="gemini-model-select">
-                            <option value="gemini-2.0-flash" ${this.config.model === 'gemini-2.0-flash' ? 'selected' : ''}>gemini-2.0-flash (Recommended)</option>
-                            <option value="gemini-1.5-flash" ${this.config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-1.5-flash</option>
-                            <option value="gemini-1.5-flash-8b" ${this.config.model === 'gemini-1.5-flash-8b' ? 'selected' : ''}>gemini-1.5-flash-8b (Fastest)</option>
+                            <option value="gemini-3.8-flash" ${this.config.model === 'gemini-3.8-flash' ? 'selected' : ''}>gemini-3.8-flash ✦ (Recommended)</option>
+                            <option value="gemini-3.5-flash-lite" ${this.config.model === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Lightweight / Fast)</option>
+                            <option value="gemini-flash-latest" ${this.config.model === 'gemini-flash-latest' ? 'selected' : ''}>gemini-flash-latest (Auto-Updated)</option>
+                            <option value="gemini-3.7-flash" ${this.config.model === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Next-Gen)</option>
+                            <option value="gemini-2.5-flash" ${this.config.model === 'gemini-2.5-flash' ? 'selected' : ''}>gemini-2.5-flash (Stable)</option>
+                            <option value="gemini-2.5-flash-lite" ${this.config.model === 'gemini-2.5-flash-lite' ? 'selected' : ''}>gemini-2.5-flash-lite</option>
                         </select>
                     </div>
                     <div class="key-form-actions">
@@ -188,7 +197,7 @@ Always label simulation outputs as "illustrative projections" not verified forec
 
         if (clearBtn) {
             clearBtn.addEventListener("click", () => {
-                this.saveConfig("", "gemini-2.0-flash");
+                this.saveConfig("", "gemini-3.8-flash");
                 window.StorageManager.remove("citybrain_gemini_config");
                 if (form) form.style.display = "none";
                 this.renderKeySetupUI();
@@ -206,8 +215,8 @@ Always label simulation outputs as "illustrative projections" not verified forec
     },
 
     async testAndSaveKey() {
-        const key   = (document.getElementById("gemini-key-input")?.value || "").trim();
-        const model = document.getElementById("gemini-model-select")?.value || "gemini-2.0-flash";
+        const key   = (document.getElementById("gemini-key-input")?.value || "").trim() || BUILTIN_GEMINI_KEY;
+        const model = document.getElementById("gemini-model-select")?.value || "gemini-3.8-flash";
         const status = document.getElementById("key-test-status");
 
         if (!key) {
@@ -218,10 +227,13 @@ Always label simulation outputs as "illustrative projections" not verified forec
         this.showKeyStatus("🔄 Verifying key with Gemini...", "status-testing");
 
         try {
-            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
             const res = await fetch(testUrl, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": key
+                },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: "Respond only with: OK" }] }]
                 })
@@ -238,7 +250,7 @@ Always label simulation outputs as "illustrative projections" not verified forec
             } else {
                 const err = await res.json().catch(() => ({}));
                 const msg = err?.error?.message || `HTTP ${res.status}`;
-                this.showKeyStatus(`❌ Invalid key: ${msg}`, "status-error");
+                this.showKeyStatus(`❌ Status: ${msg}`, "status-error");
             }
         } catch (e) {
             this.showKeyStatus(`❌ Network error: ${e.message}`, "status-error");
@@ -328,10 +340,12 @@ Always label simulation outputs as "illustrative projections" not verified forec
         } catch (err) {
             this.hideTyping();
             console.error("Chat error:", err);
+            const fallbackText = await this.offlineEngine(userText);
             this.appendMessage("bot",
-                `⚠️ **Connection Error:** ${err.message}\n\nFalling back to offline engine...`,
+                `⚠️ *[Live Engine Notice: ${err.message}]*\n\n${fallbackText}`,
                 new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             );
+            this.pushHistory("model", fallbackText);
         }
 
         this.context.interactionCount++;
@@ -359,7 +373,10 @@ Always label simulation outputs as "illustrative projections" not verified forec
 
         const response = await fetch(this.ENDPOINT, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "X-goog-api-key": this.config.apiKey
+            },
             body: JSON.stringify(payload)
         });
 
