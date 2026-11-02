@@ -39,10 +39,9 @@ const CityMapEngine = {
         // Add Zoom Control on top right
         L.control.zoom({ position: "topright" }).addTo(this.map);
 
-        // Dark Matter Futuristic Tile Layer (CartoDB)
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-            attribution: '&copy; <a href="https://carto.com/">CARTO</a> | CityBrain Simulation Data',
-            subdomains: "abcd",
+        // 100% Free OpenStreetMap Tile Layer (No API key or watermark required)
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | CityBrain Simulation Data',
             maxZoom: 19
         }).addTo(this.map);
 

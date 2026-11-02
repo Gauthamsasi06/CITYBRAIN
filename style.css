@@ -1345,6 +1345,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: #050811;
 }
 
+/* Futuristic Cyber Dark Filter for OpenStreetMap Tiles (100% Free, Zero Watermark) */
+#leaflet-map .leaflet-tile {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
 /* Custom Marker CSS */
 .custom-cyber-marker {
     background: transparent;
