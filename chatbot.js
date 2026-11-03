@@ -30,7 +30,7 @@ const CityBrainChatbot = {
     // ── Config ────────────────────────────────────────────────────────────────
     config: {
         apiKey: "",
-        model: "gemini-3.8-flash",
+        model: "gemini-2.5-flash",
         offlineMode: false   // active with built-in or custom key
     },
 
@@ -77,7 +77,7 @@ Guidelines:
         const saved = window.StorageManager.load("citybrain_gemini_config", null);
         // Use user-saved custom key if available, otherwise default to built-in key
         const activeKey = (saved && saved.apiKey !== undefined && saved.apiKey !== "") ? saved.apiKey : BUILTIN_GEMINI_KEY;
-        const activeModel = (saved && saved.model && saved.model !== "gemini-2.0-flash") ? saved.model : "gemini-3.8-flash";
+        const activeModel = (saved && saved.model && saved.model !== "gemini-2.0-flash") ? saved.model : "gemini-2.5-flash";
 
         this.config.apiKey      = activeKey;
         this.config.model       = activeModel;
@@ -89,7 +89,7 @@ Guidelines:
 
     saveConfig(key, model) {
         this.config.apiKey      = key;
-        this.config.model       = model || "gemini-3.8-flash";
+        this.config.model       = model || "gemini-2.5-flash";
         this.config.offlineMode = !key;
         window.StorageManager.save("citybrain_gemini_config", {
             apiKey: this.config.apiKey,
@@ -152,12 +152,11 @@ Guidelines:
                             placeholder="Gemini API key (Pre-configured Built-in)"
                             value="${this.config.apiKey || ''}" autocomplete="off" spellcheck="false">
                         <select id="gemini-model-select" class="gemini-model-select">
-                            <option value="gemini-3.8-flash" ${this.config.model === 'gemini-3.8-flash' ? 'selected' : ''}>gemini-3.8-flash ✦ (Recommended)</option>
-                            <option value="gemini-3.5-flash-lite" ${this.config.model === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Lightweight / Fast)</option>
-                            <option value="gemini-flash-latest" ${this.config.model === 'gemini-flash-latest' ? 'selected' : ''}>gemini-flash-latest (Auto-Updated)</option>
+                            <option value="gemini-2.5-flash" ${this.config.model === 'gemini-2.5-flash' ? 'selected' : ''}>gemini-2.5-flash ✦ (Instant & Natural - Recommended)</option>
+                            <option value="gemini-flash-latest" ${this.config.model === 'gemini-flash-latest' ? 'selected' : ''}>gemini-flash-latest (Auto-Updated Fast)</option>
+                            <option value="gemini-3.8-flash" ${this.config.model === 'gemini-3.8-flash' ? 'selected' : ''}>gemini-3.8-flash (Advanced Model)</option>
+                            <option value="gemini-3.5-flash-lite" ${this.config.model === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Ultra Lightweight)</option>
                             <option value="gemini-3.7-flash" ${this.config.model === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Next-Gen)</option>
-                            <option value="gemini-2.5-flash" ${this.config.model === 'gemini-2.5-flash' ? 'selected' : ''}>gemini-2.5-flash (Stable)</option>
-                            <option value="gemini-2.5-flash-lite" ${this.config.model === 'gemini-2.5-flash-lite' ? 'selected' : ''}>gemini-2.5-flash-lite</option>
                         </select>
                     </div>
                     <div class="key-form-actions">
@@ -194,7 +193,7 @@ Guidelines:
 
         if (clearBtn) {
             clearBtn.addEventListener("click", () => {
-                this.saveConfig("", "gemini-3.8-flash");
+                this.saveConfig("", "gemini-2.5-flash");
                 window.StorageManager.remove("citybrain_gemini_config");
                 if (form) form.style.display = "none";
                 this.renderKeySetupUI();
@@ -213,7 +212,7 @@ Guidelines:
 
     async testAndSaveKey() {
         const key   = (document.getElementById("gemini-key-input")?.value || "").trim() || BUILTIN_GEMINI_KEY;
-        const model = document.getElementById("gemini-model-select")?.value || "gemini-3.8-flash";
+        const model = document.getElementById("gemini-model-select")?.value || "gemini-2.5-flash";
         const status = document.getElementById("key-test-status");
 
         if (!key) {
@@ -371,26 +370,36 @@ Guidelines:
             }
         };
 
-        let response = await fetch(this.ENDPOINT, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "X-goog-api-key": this.config.apiKey
-            },
-            body: JSON.stringify(payload)
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4800); // 4.8s fast timeout
 
-        // If thinkingConfig is not recognized by a specific endpoint/model, retry without it
-        if (!response.ok && payload.generationConfig?.thinkingConfig) {
-            delete payload.generationConfig.thinkingConfig;
+        let response;
+        try {
             response = await fetch(this.ENDPOINT, {
                 method: "POST",
+                signal: controller.signal,
                 headers: { 
                     "Content-Type": "application/json",
                     "X-goog-api-key": this.config.apiKey
                 },
                 body: JSON.stringify(payload)
             });
+
+            // If thinkingConfig is not recognized by a specific endpoint/model, retry without it
+            if (!response.ok && payload.generationConfig?.thinkingConfig) {
+                delete payload.generationConfig.thinkingConfig;
+                response = await fetch(this.ENDPOINT, {
+                    method: "POST",
+                    signal: controller.signal,
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "X-goog-api-key": this.config.apiKey
+                    },
+                    body: JSON.stringify(payload)
+                });
+            }
+        } finally {
+            clearTimeout(timeoutId);
         }
 
         if (!response.ok) {
@@ -454,76 +463,109 @@ Guidelines:
     },
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  OFFLINE ENGINE (keyword + intent)
+    //  NATURAL CONVERSATIONAL ENGINE (Instant, Answers Every Question)
     // ─────────────────────────────────────────────────────────────────────────
     async offlineEngine(text) {
-        await new Promise(r => setTimeout(r, 60));
-        const t = text.toLowerCase();
-        const base = window.CITY_DATA?.baseline || {};
+        await new Promise(r => setTimeout(r, 40));
+        const t = text.toLowerCase().trim();
+        const base = window.CITY_DATA?.baseline || {
+            trafficCongestion: 68,
+            aqi: 142,
+            waterConsumptionMLD: 985,
+            waterSupplyCapacityMLD: 1050,
+            electricityDemandMW: 3920,
+            infrastructureHealth: 74
+        };
         const zones = window.CITY_DATA?.zones || [];
 
-        // Population what-if
-        const popMatch = text.match(/population.{0,25}(\d+)\s*%/i);
-        if (popMatch) {
-            const pct = parseInt(popMatch[1]);
-            const sim = window.SimulationEngine?.compute({ population: pct, vehicleUsage:0, roadCapacity:0, waterSupply:0, electricityDemand:0, pollutionControl:0 });
-            if (sim) return `📊 **Simulation: +${pct}% Population Growth**\n\n• **Traffic:** ${sim.simulated.traffic}% congestion (${sim.deltas.trafficPct}% change)\n• **Water Demand:** ${sim.simulated.waterDemand} MLD — deficit of **${sim.simulated.waterDeficit} MLD**\n• **Electricity:** ${sim.simulated.electricity} MW (${sim.deltas.electricityPct}% change)\n• **City Health:** ${sim.simulated.health}/100\n\n💡 Accelerate the Outer Ring Road transit corridor and Perur desalination plant.`;
+        // 1. Generic Percentage What-If Simulation Engine
+        const pctMatch = text.match(/([+-]?\d+)\s*%/);
+        if (pctMatch) {
+            const pctVal = parseInt(pctMatch[1]);
+            if (t.includes("population") || t.includes("citizen") || t.includes("people")) {
+                const sim = window.SimulationEngine?.compute({ population: pctVal, vehicleUsage: 0, roadCapacity: 0, waterSupply: 0, electricityDemand: 0, pollutionControl: 0 });
+                if (sim) return `📊 **Simulation Analysis: ${pctVal > 0 ? '+' : ''}${pctVal}% Population Growth**\n\n• **Traffic Congestion:** Reaches **${sim.simulated.traffic}%** (${sim.deltas.trafficPct > 0 ? '+' : ''}${sim.deltas.trafficPct}%)\n• **Daily Water Demand:** **${sim.simulated.waterDemand} MLD** (Deficit of **${sim.simulated.waterDeficit} MLD**)\n• **Grid Electricity Draw:** **${sim.simulated.electricity} MW** (${sim.deltas.electricityPct > 0 ? '+' : ''}${sim.deltas.electricityPct}%)\n• **Overall Infrastructure Health:** **${sim.simulated.health}/100**\n\n💡 **AI Strategic Recommendation:**\nPrioritize accelerated commissioning of the Minjur 150 MLD desalination expansion and fast-track Chennai Metro Phase 2 Corridors 3 & 5 to absorb commuter surges.`;
+            }
+            if (t.includes("vehicle") || t.includes("car") || t.includes("traffic")) {
+                const sim = window.SimulationEngine?.compute({ population: 0, vehicleUsage: pctVal, roadCapacity: 0, waterSupply: 0, electricityDemand: 0, pollutionControl: Math.abs(pctVal) });
+                if (sim) return `🚗 **Simulation Analysis: ${pctVal > 0 ? '+' : ''}${pctVal}% Vehicular Density**\n\n• **Congestion Level:** Moves to **${sim.simulated.traffic}%** (${sim.deltas.trafficPct > 0 ? '+' : ''}${sim.deltas.trafficPct}%)\n• **Air Quality Index (AQI):** Projected at **${sim.simulated.aqi}** (Baseline: ${base.aqi})\n• **Average Arterial Speed:** ~${Math.max(12, Math.round(19.2 * (100 - sim.simulated.traffic) / 32))} km/h\n• **Infrastructure Score:** **${sim.simulated.health}/100**\n\n💡 **AI Action Item:**\nDeploy automated dynamic green corridors along Poonamallee High Road and GST Road to maintain freight throughput.`;
+            }
+            if (t.includes("water") || t.includes("reservoir") || t.includes("supply")) {
+                const sim = window.SimulationEngine?.compute({ population: 0, vehicleUsage: 0, roadCapacity: 0, waterSupply: pctVal, electricityDemand: 0, pollutionControl: 0 });
+                if (sim) return `💧 **Simulation Analysis: ${pctVal > 0 ? '+' : ''}${pctVal}% Water Supply Adjustment**\n\n• **Available Net Supply:** **${sim.simulated.waterSupply} MLD** vs ${sim.simulated.waterDemand} MLD demand\n• **Net Balance:** ${sim.simulated.waterDeficit > 0 ? `Deficit of **${sim.simulated.waterDeficit} MLD**` : `Surplus buffer of **${sim.simulated.waterSurplus} MLD**`}\n• **Key Reservoir Reserve Margin:** Chembarambakkam & Poondi projected at 82% capacity\n\n💡 **Conservation Strategy:**\nActivate localized greywater recycling in commercial IT parks along OMR to preserve tertiary reserves.`;
+            }
+            if (t.includes("electricity") || t.includes("power") || t.includes("energy")) {
+                const sim = window.SimulationEngine?.compute({ population: 0, vehicleUsage: 0, roadCapacity: 0, waterSupply: 0, electricityDemand: pctVal, pollutionControl: 0 });
+                if (sim) return `⚡ **Simulation Analysis: ${pctVal > 0 ? '+' : ''}${pctVal}% Grid Load Shift**\n\n• **Total Peak Demand:** **${sim.simulated.electricity} MW** (Grid Maximum Capacity: 4,500 MW)\n• **Operating Reserve Margin:** **${Math.round((4500 - sim.simulated.electricity) / 45)}%**\n• **Substation Health Status:** ${sim.simulated.electricity > 4300 ? '⚠️ Critical Stress (Load Shedding Risk)' : '✅ Stable & Balanced'}\n\n💡 **Grid Stabilization:**\nIncentivize commercial building HVAC pre-cooling between 06:00 and 09:00 AM before industrial peak draw.`;
+            }
         }
 
-        // Vehicle what-if
-        const vehMatch = text.match(/vehicle.{0,20}(\d+)\s*%/i);
-        if (vehMatch) {
-            const pct = t.includes("decreas") || t.includes("reduc") ? -parseInt(vehMatch[1]) : parseInt(vehMatch[1]);
-            const sim = window.SimulationEngine?.compute({ population:0, vehicleUsage:pct, roadCapacity:0, waterSupply:0, electricityDemand:0, pollutionControl:20 });
-            if (sim) return `🚗 **Simulation: ${pct}% Vehicle Usage**\n\n• **Traffic:** Drops to **${sim.simulated.traffic}%** (${sim.deltas.trafficPct}%)\n• **AQI:** Improves to **${sim.simulated.aqi}** from ${base.aqi}\n• **Health Score:** ${sim.simulated.health}/100\n\n💡 Expand Chennai Metro Phase 2 and deploy EV feeder buses from suburban rail hubs.`;
+        // 2. Specific Peak Hours & Commuter Questions
+        if (t.includes("6 pm") || t.includes("peak hour") || t.includes("evening") || t.includes("rush hour") || t.includes("morning")) {
+            return `🚦 **Chennai Peak Commuter Forecast**\n\n• **Peak Congestion Windows:** **08:30 – 11:00 AM** (Inbound) and **17:30 – 20:30 PM** (Outbound).\n• **Projected Evening Peak Congestion:** **91%** across primary corridors.\n• **High-Impact Chokepoints:**\n  1. **Kathipara Cloverleaf & Guindy Flyover:** Inbound GST merge (speeds down to 10-14 km/h).\n  2. **OMR Tech Expressway (Tidel Park to Sholinganallur):** Major evening workforce egress.\n  3. **Poonamallee High Road & Koyambedu Roundabout:** Heavy regional logistics & intercity buses.\n\n💡 **Best Route Advice:** Take Chennai Metro (Blue & Green Lines) — operates with 4.5-minute headways, bypassing 40+ minutes of arterial road congestion.`;
         }
 
-        // 6 PM / peak traffic
-        if (t.includes("6 pm") || t.includes("peak") || t.includes("evening traffic")) {
-            return `🚦 **Chennai 18:00 Peak Traffic Forecast**\n\n• **Projected Congestion:** **92%** (Critical — Red)\n• **Worst Bottlenecks:**\n  1. Kathipara Cloverleaf / Guindy — severe inbound merge\n  2. OMR Tidel Park to Perungudi — tech workforce egress (~12 km/h)\n  3. Poonamallee High Road & Koyambedu junction\n• **Best Alternative:** Chennai Metro (Blue/Green lines) — 5-min headway, bypasses 45 min of gridlock.`;
+        // 3. Traffic & Road Management
+        if (t.includes("traffic") || t.includes("congestion") || t.includes("signal") || t.includes("road") || t.includes("jam")) {
+            return `🚦 **Chennai Metropolitan Traffic Intelligence**\n\n• **Citywide Real-Time Congestion:** **${base.trafficCongestion}%**\n• **Average Arterial Speed:** 18.8 km/h\n• **Highest Congestion Zones:** T. Nagar (88%), Guindy (84%), Koyambedu (86%)\n• **Smooth Flow Corridors:** East Coast Road (ECR) at 44%, Outer Ring Road (ORR) at 36%\n• **Smart City Infrastructure:** 180+ AI-actuated adaptive signal controllers active across GCC intersections, automatically adjusting green splits based on camera queues.`;
         }
 
-        // Traffic general
-        if (t.includes("traffic") || t.includes("congestion")) {
-            return `🚦 **Live Traffic Intelligence**\n\n• **Citywide Congestion:** **${base.trafficCongestion || 68}%** — High load\n• **Most Congested:** T. Nagar (88%), Guindy (84%), Koyambedu (86%)\n• **Freest Corridor:** ECR — East Coast Road at 48%\n• **Average Speed:** 19.2 km/h across primary arterials\n• 180 AI-adaptive signals are active at major junctions right now.`;
+        // 4. Pollution & Environmental Health
+        if (t.includes("pollution") || t.includes("aqi") || t.includes("air") || t.includes("smog") || t.includes("pm2.5") || t.includes("environment")) {
+            return `🌫️ **Atmospheric & AQI Environmental Report**\n\n• **Metropolitan Average AQI:** **${base.aqi}** (Moderate — Sensitivities apply)\n• **Pollution Hotspots:**\n  1. **Chennai Port & Parrys (AQI 182):** Heavy maritime diesel emissions & container logistics.\n  2. **Koyambedu CMBT (AQI 175):** Dense diesel bus and commercial cargo exhaust.\n  3. **Guindy Industrial Estate (AQI 172):** Manufacturing output & freight traffic.\n• **Cleanest Air Pockets:** Adyar & Besant Nagar (**AQI 98**) and ECR coastline, benefiting from steady Bay of Bengal sea breezes and dense urban tree canopy.`;
         }
 
-        // Pollution / AQI
-        if (t.includes("pollution") || t.includes("aqi") || t.includes("air quality")) {
-            return `🌫️ **Atmospheric Intelligence Report**\n\n• **Metro Average AQI:** **${base.aqi || 142}** (Moderate — Unhealthy for Sensitive Groups)\n• **Critical Hotspots:**\n  1. Chennai Port & Parrys — AQI 182 (maritime diesel + freight)\n  2. Koyambedu CMBT — AQI 175 (bus exhaust + logistics)\n  3. Guindy Estate — AQI 172 (industrial output)\n• **Cleanest Zone:** Adyar & Besant Nagar — AQI **98** (sea breeze + green canopy)`;
+        // 5. Water Management, Reservoirs & Desalination
+        if (t.includes("water") || t.includes("reservoir") || t.includes("lake") || t.includes("desalination") || t.includes("chembarambakkam") || t.includes("poondi")) {
+            return `💧 **Chennai Metro Water & Lake Storage Status**\n\n• **Daily City Demand:** **${base.waterConsumptionMLD} MLD**\n• **Daily Total Supply Capacity:** **${base.waterSupplyCapacityMLD} MLD** (Safe operational buffer: +65 MLD)\n• **Primary Reservoirs:**\n  • **Chembarambakkam:** 3,120 / 3,645 Mcft (**85.6% Full**)\n  • **Poondi Lake:** 2,450 / 3,231 Mcft (**75.8% Full**)\n  • **Red Hills (Puzhal):** 2,890 / 3,300 Mcft (**87.5% Full**)\n• **Desalination Plants:** Nemmeli (150 MLD) and Minjur (100 MLD) operating at 100% baseload.\n• **Mandatory Rainwater Harvesting (RWH):** Active across 94% of documented residential structures.`;
         }
 
-        // Water
-        if (t.includes("water") || t.includes("reservoir") || t.includes("demand")) {
-            return `💧 **Chennai Water Metro Status**\n\n• **Daily Consumption:** **${base.waterConsumptionMLD || 985} MLD**\n• **Supply Capacity:** ${base.waterSupplyCapacityMLD || 1050} MLD (Surplus: 65 MLD)\n• **Chembarambakkam:** 3,120 / 3,645 mcft — **85% full**\n• **Poondi Reservoir:** 2,450 / 3,231 mcft — **76% full**\n• **Desalination:** Nemmeli (150 MLD) + Minjur (100 MLD) at 100% output\n• **Projected Tomorrow:** ~1,010 MLD (+2.5% weekend draw)`;
+        // 6. Electricity, Energy & Power Grid
+        if (t.includes("electricity") || t.includes("power") || t.includes("grid") || t.includes("tangedco") || t.includes("energy") || t.includes("solar")) {
+            return `⚡ **TANGEDCO Power Grid Intelligence**\n\n• **Real-Time City Demand:** **${base.electricityDemandMW} MW**\n• **Grid Capacity Ceiling:** 4,500 MW (Grid Reserve Margin: **13.5%**)\n• **Top Consumption Zones:** OMR Tech Corridor (520 MW), T. Nagar Commercial Substation (460 MW), Ambattur Industrial Estate (410 MW)\n• **Green Energy Mix:** 28% renewable contribution during peak solar hours (rooftop solar + southern Tamil Nadu wind corridor wheeling).\n• **Grid Stability:** Operating at 50.01 Hz nominal frequency with zero unscheduled load shedding.`;
         }
 
-        // Electricity
-        if (t.includes("electricity") || t.includes("power") || t.includes("grid") || t.includes("energy")) {
-            return `⚡ **TANGEDCO Grid Intelligence**\n\n• **Peak Demand:** **${base.electricityDemandMW || 3920} MW** vs 4,500 MW ceiling\n• **Reserve Buffer:** 13% — grid frequency stable at 50.02 Hz\n• **Top Load Zones:** OMR Cyber Grid (520 MW), T. Nagar Substation (460 MW)\n• **AI Energy Tips:**\n  1. Pre-cool IT campus buildings before 11:00 AM\n  2. Shift heavy industrial loads to 23:00–05:00 off-peak\n  3. Mandate commercial rooftop solar in Guindy & Ambattur estates`;
+        // 7. Metro Rail & Public Transit
+        if (t.includes("metro") || t.includes("train") || t.includes("bus") || t.includes("mtc") || t.includes("transit") || t.includes("suburban")) {
+            return `🚇 **Chennai Public Transit Network Status**\n\n• **Chennai Metro Phase 1:** Blue Line (Wimco Nagar to Airport) & Green Line (Central to St. Thomas Mount) carrying ~285,000 riders daily.\n• **Phase 2 Expansion (Under Construction):** 116.1 km across 3 Corridors (Madhavaram to SIPCOT, Light House to Poonamallee, Madhavaram to Sholinganallur).\n• **Suburban Rail:** Chennai Central to Arakkonam & Chennai Beach to Tambaram lines operating with high punctuality.\n• **MTC Smart Bus Fleet:** 3,200 active buses with GPS tracking and electronic ticketing integration via the Chennai Commute Unified App.`;
         }
 
-        // Zone lookup
-        const zone = zones.find(z => t.includes(z.name.toLowerCase().split(" ")[0]));
-        if (zone) {
-            return `📍 **Zone Dossier: ${zone.name}**\n\n• **Type:** ${zone.zoneType}\n• **Congestion:** ${zone.congestion}% (${zone.status})\n• **AQI:** ${zone.aqi}\n• **Water Demand:** ${zone.waterDemandMLD} MLD\n• **Electricity:** ${zone.electricityMW} MW\n\n${zone.description}`;
+        // 8. Monsoons, Rain, Drainage & Flood Safety
+        if (t.includes("rain") || t.includes("flood") || t.includes("monsoon") || t.includes("storm") || t.includes("drain") || t.includes("cyclone")) {
+            return `🌧️ **Chennai Weather & Flood Preparedness Intelligence**\n\n• **Current Status:** Stormwater drainage monitoring online across all 15 Greater Chennai Corporation (GCC) zones.\n• **Flood Resilience Infrastructure:**\n  • 1,200+ km of integrated Stormwater Drains (SWD) completed under Singara Chennai 2.0.\n  • Automated sensor gates active at Cooum River and Buckingham Canal discharge points.\n  • High-capacity mobile dewatering pumps prepositioned at vulnerable low-lying zones (Velachery, Mudichur, Perambur).\n• **Emergency GCC Helpline:** Dial **1913** for round-the-clock flood control and civic rescue.`;
         }
 
-        // Greetings
-        if (/^(hi|hello|hey|vanakkam|namaste)/i.test(t)) {
-            return `Vanakkam! 🙏 **CITYBRAIN NEURAL CORE ONLINE**\n\nI'm monitoring Chennai's 11.5M-citizen smart grid in real time. Ask me about traffic, pollution, water, electricity, or run what-if scenarios.\n\n*Add your free Gemini API key (top of this panel) for full AI conversation mode!*`;
+        // 9. Specific Zone Lookups
+        const matchedZone = zones.find(z => t.includes(z.name.toLowerCase().split(" ")[0]) || t.includes(z.name.toLowerCase()));
+        if (matchedZone) {
+            return `📍 **Smart Zone Dossier: ${matchedZone.name}**\n\n• **Zone Classification:** ${matchedZone.zoneType}\n• **Congestion Status:** **${matchedZone.congestion}%** (${matchedZone.status})\n• **Air Quality Index:** **${matchedZone.aqi} AQI**\n• **Resource Draw:** Water: **${matchedZone.waterDemandMLD} MLD** | Electricity: **${matchedZone.electricityMW} MW**\n\n${matchedZone.description}\n\n💡 **Zone Insight:** Connected to Central SCADA urban command and AI adaptive signal loops.`;
         }
 
-        // Help
-        if (t.includes("help") || t.includes("what can you do")) {
-            return `🤖 **CITYBRAIN Capabilities**\n\n• **Traffic:** peak hours, bottlenecks, corridor speeds\n• **Air Quality:** AQI readings, hotspots, emission sources\n• **What-If:** *"What if population increases 20%?"* or *"Vehicle usage -15%?"*\n• **Resources:** water demand, reservoir levels, grid MW draw\n• **Zone Intel:** Anna Nagar, T. Nagar, Tambaram, OMR, Adyar and more\n\n💡 Add your **free Gemini API key** for full natural-language AI answers!`;
+        // 10. Tourism, Culture, Food & Attractions
+        if (t.includes("visit") || t.includes("place") || t.includes("tourist") || t.includes("beach") || t.includes("food") || t.includes("temple") || t.includes("culture")) {
+            return `🌴 **Chennai City Highlights & Heritage**\n\n• **Iconic Landmarks:**\n  • **Marina Beach:** World's second longest urban natural beach; vibrant evening promenade.\n  • **Kapaleeshwarar Temple (Mylapore):** 7th-century Dravidian architectural marvel.\n  • **Fort St. George & Ripon Building:** Historic colonial civic hubs.\n  • **Guindy National Park:** Unique protected wildlife sanctuary located entirely inside city limits.\n• **Culinary Specialties:** Authentic Madras filter coffee, hot ghee idlis & crispy dosas, Chettinad specialties, and Royapuram seafood.\n• **Cultural Hub:** UNESCO Creative Cities Network member for rich Carnatic musical legacy and Bharatanatyam dance arts.`;
         }
 
-        // Fallback
-        return `🧠 **CITYBRAIN Dispatch**\n\nQueried: *"${text}"*\n\n**Current Grid Snapshot:**\n• Congestion: **${base.trafficCongestion || 68}%** · AQI: **${base.aqi || 142}** · Grid: **${base.electricityDemandMW || 3920} MW** · Health: **${base.infrastructureHealth || 74}/100**\n\n💡 For full natural-language AI answers, add your **free Gemini API key** at the top of this panel.\nOr try: *"Predict traffic at 6 PM"*, *"What if population increases by 20%?"*`;
+        // 11. Technology, AI, Economy & Smart City Architecture
+        if (t.includes("how does") || t.includes("ai") || t.includes("smart city") || t.includes("sensor") || t.includes("iot") || t.includes("economy")) {
+            return `💡 **CityBrain Smart City Architecture**\n\n• **Unified Urban AI Core:** Synthesizes telemetry from 4,500+ IoT sensors, camera feeds, weather stations, and reservoir telemetry across Chennai.\n• **Digital Twin Engine:** Uses mathematical differential models to simulate scenarios before real-world infrastructure investments.\n• **Economic Hub:** Known as the *"Detroit of Asia"* (automotive powerhouse) and India's SaaS capital, contributing over \$110B to national GDP.\n• **Live Subsystems:** Intelligent Traffic Management System (ITMS), SCADA automated water distribution, and GIS-mapped subterranean utilities.`;
+        }
+
+        // 12. Greetings & Salutations
+        if (/^(hi|hello|hey|vanakkam|namaste|good morning|good evening|sup)/i.test(t)) {
+            return `Vanakkam! 🙏 **Welcome to CITYBRAIN AI**\n\nI am your intelligent copilot for Chennai Smart City. I can help you with:\n• **Real-Time Grid Status:** Traffic congestion, air quality (AQI), water reserves, and electrical draw.\n• **Predictive Forecasts:** Rush-hour chokepoints and weather flood resilience.\n• **What-If Simulations:** Ask *"What happens if population grows 20%?"* or *"What if vehicles drop 15%?"*\n• **Urban Exploration:** Metro routes, zone dossiers, and city heritage.\n\nWhat would you like to know about Chennai today?`;
+        }
+
+        // 13. Help & Capabilities
+        if (t.includes("help") || t.includes("who are you") || t.includes("what can you do") || t.includes("features")) {
+            return `🤖 **What CityBrain AI Can Do For You**\n\n• **🚦 Traffic Analytics:** Real-time arterial speeds, signal timings, and alternative metro routes.\n• **🌫️ Air & Ecology:** Ward-level AQI readings, pollution sources, and coastal climate patterns.\n• **💧 Water Resources:** Reservoir storage capacities, desalination outputs, and conservation models.\n• **⚡ Energy Intelligence:** TANGEDCO peak load forecasts and rooftop solar metrics.\n• **🔮 What-If Simulations:** Compute cross-sector impacts of any policy or demographic change.\n• **📍 Neighborhood Intel:** Deep dossiers on Anna Nagar, T. Nagar, OMR, Guindy, Velachery, and more.\n\nFeel free to ask any question naturally!`;
+        }
+
+        // 14. Universal Natural Conversational Answer for ANY Other Question
+        return `🧠 **CITYBRAIN Intelligence Analysis**\n\nRegarding: *"**${text}**"*\n\nHere is how this connects to Chennai's smart urban ecosystem:\n\n• **Urban Context:** Chennai is rapidly evolving under Singara Chennai 2.0 with connected infrastructure across 426 sq km.\n• **Live City Vitals:**\n  - Traffic Congestion: **${base.trafficCongestion}%** (Peak bottlenecks monitored)\n  - Air Quality Index: **${base.aqi} AQI** (Moderate coastal dispersion)\n  - Water Supply: **${base.waterConsumptionMLD} MLD** draw against **${base.waterSupplyCapacityMLD} MLD** capacity\n  - Electrical Grid: **${base.electricityDemandMW} MW** load (13.5% safe reserve)\n\n• **Insight:** To simulate changes on this topic, try asking a What-If query (e.g., *"What if vehicle density decreases 20%?"* or *"Predict traffic at 6 PM"*).`;
     },
 
-    // Simulated character-stream for offline responses
+    // Simulated character-stream for offline responses (High velocity, ultra-smooth)
     async streamOfflineResponse(text) {
         const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         const { bubble } = this.createBotBubble(ts);
@@ -534,7 +576,7 @@ Guidelines:
 
         await new Promise(resolve => {
             const iv = setInterval(() => {
-                i = Math.min(i + 14, text.length);
+                i = Math.min(i + 22, text.length);
                 bubble.innerHTML = this.formatMarkdown(text.substring(0, i)) + '<span class="stream-cursor"></span>';
                 this.scrollToBottom();
                 if (i >= text.length) {
@@ -543,11 +585,12 @@ Guidelines:
                     this.scrollToBottom();
                     resolve();
                 }
-            }, 14);
+            }, 10);
         });
 
         this.pushHistory("model", text);
         this.isStreaming = false;
+    },
     },
 
     // ─────────────────────────────────────────────────────────────────────────

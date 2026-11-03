@@ -7,29 +7,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
 :root {
-    /* Cyber & Futuristic Color Palette */
-    --bg-deep: #050811;
-    --bg-secondary: #090e1c;
-    --bg-card: rgba(14, 23, 42, 0.75);
-    --bg-card-hover: rgba(22, 36, 64, 0.85);
-    --bg-glass: rgba(15, 23, 42, 0.65);
+    /* Bioluminescent Aurora & Cyber-Obsidian Color Palette */
+    --bg-deep: #030611;
+    --bg-secondary: #070d1e;
+    --bg-card: rgba(10, 18, 38, 0.76);
+    --bg-card-hover: rgba(16, 28, 56, 0.88);
+    --bg-glass: rgba(8, 15, 32, 0.72);
     
-    --border-color: rgba(0, 240, 255, 0.18);
-    --border-glow: rgba(0, 240, 255, 0.4);
+    --border-color: rgba(0, 245, 196, 0.22);
+    --border-glow: rgba(0, 245, 196, 0.55);
     --border-subtle: rgba(255, 255, 255, 0.08);
 
-    --cyan-neon: #00f0ff;
-    --cyan-glow: rgba(0, 240, 255, 0.35);
-    --blue-electric: #38bdf8;
-    --purple-neon: #a855f7;
-    --purple-glow: rgba(168, 85, 247, 0.35);
-    --green-neon: #10b981;
-    --green-glow: rgba(16, 185, 129, 0.35);
-    --yellow-neon: #fbbf24;
-    --red-neon: #f43f5e;
-    --red-glow: rgba(244, 63, 94, 0.35);
+    --cyan-neon: #00f5c4;          /* Vivid Mint-Teal */
+    --cyan-glow: rgba(0, 245, 196, 0.42);
+    --blue-electric: #38bdf8;       /* Electric Ice Blue */
+    --purple-neon: #a855f7;        /* Hyper Violet */
+    --purple-glow: rgba(168, 85, 247, 0.42);
+    --green-neon: #00ff88;         /* Emerald Neon */
+    --green-glow: rgba(0, 255, 136, 0.42);
+    --yellow-neon: #f59e0b;        /* Solar Gold */
+    --red-neon: #ff3366;           /* Radiant Crimson */
+    --red-glow: rgba(255, 51, 102, 0.42);
 
-    --text-main: #f1f5f9;
+    --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --text-dim: #64748b;
 
@@ -240,8 +240,8 @@ h1, h2, h3, h4, h5, .font-heading {
 
 .nav-item:hover {
     color: var(--text-main);
-    background: rgba(0, 240, 255, 0.08);
-    border-color: rgba(0, 240, 255, 0.2);
+    background: rgba(0, 245, 196, 0.1);
+    border-color: rgba(0, 245, 196, 0.25);
 }
 
 .nav-item:hover i {
@@ -251,9 +251,9 @@ h1, h2, h3, h4, h5, .font-heading {
 
 .nav-item.active {
     color: #ffffff;
-    background: linear-gradient(90deg, rgba(0, 240, 255, 0.18), rgba(168, 85, 247, 0.08));
+    background: linear-gradient(90deg, rgba(0, 245, 196, 0.2), rgba(168, 85, 247, 0.12));
     border-color: var(--cyan-neon);
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+    box-shadow: 0 0 18px rgba(0, 245, 196, 0.22);
 }
 
 .nav-item.active i {
@@ -470,8 +470,8 @@ h1, h2, h3, h4, h5, .font-heading {
     left: 0;
     width: 100%;
     height: 3px;
-    background: linear-gradient(90deg, transparent, var(--cyan-neon), transparent);
-    opacity: 0.6;
+    background: linear-gradient(90deg, transparent, var(--cyan-neon), var(--purple-neon), transparent);
+    opacity: 0.85;
 }
 
 .metric-header {
@@ -651,12 +651,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .btn-cyber-primary {
     flex: 1;
-    background: linear-gradient(135deg, rgba(0, 240, 255, 0.8), rgba(56, 189, 248, 0.8));
-    color: #050811;
+    background: linear-gradient(135deg, #00f5c4 0%, #38bdf8 50%, #a855f7 100%);
+    color: #030611;
     font-family: var(--font-heading);
     font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     padding: 12px 18px;
     border: none;
     border-radius: var(--radius-sm);
@@ -666,13 +666,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 0 15px var(--cyan-glow);
+    box-shadow: 0 0 20px rgba(0, 245, 196, 0.45);
 }
 
 .btn-cyber-primary:hover {
-    background: #00f0ff;
-    box-shadow: 0 0 25px var(--cyan-glow);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #26ffcf 0%, #5cd1ff 50%, #bd73ff 100%);
+    box-shadow: 0 0 30px rgba(0, 245, 196, 0.65);
+    transform: translateY(-2px);
 }
 
 .btn-cyber-secondary {
@@ -887,12 +887,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
     height: 590px;
     max-height: calc(100vh - 110px);
     max-width: calc(100vw - 40px);
-    background: rgba(9, 14, 28, 0.94);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid var(--cyan-neon);
+    background: linear-gradient(180deg, rgba(8, 14, 32, 0.96) 0%, rgba(5, 9, 20, 0.97) 100%);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(0, 245, 196, 0.45);
     border-radius: var(--radius-md);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 30px rgba(0, 240, 255, 0.22);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 245, 196, 0.2), inset 0 0 25px rgba(168, 85, 247, 0.04);
     display: flex;
     flex-direction: column;
     z-index: 500;
@@ -919,13 +919,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 @keyframes hudGlowPulse {
-    0%, 100% { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 30px rgba(0, 240, 255, 0.22); }
-    50% { box-shadow: 0 16px 54px rgba(0, 0, 0, 0.85), 0 0 55px rgba(0, 240, 255, 0.6); border-color: #ffffff; }
+    0%, 100% { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 245, 196, 0.2); }
+    50% { box-shadow: 0 22px 60px rgba(0, 0, 0, 0.9), 0 0 60px rgba(0, 245, 196, 0.6); border-color: #ffffff; }
 }
 
 .hud-drag-handle {
     cursor: grab;
     user-select: none;
+    background: linear-gradient(90deg, rgba(9, 17, 38, 0.98) 0%, rgba(20, 12, 45, 0.98) 50%, rgba(7, 16, 32, 0.98) 100%);
+    border-bottom: 1px solid rgba(0, 245, 196, 0.2);
 }
 
 .btn-hud-icon {
@@ -946,7 +948,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .btn-hud-icon:hover {
     color: var(--cyan-neon);
     border-color: var(--cyan-neon);
-    background: rgba(0, 240, 255, 0.15);
+    background: rgba(0, 245, 196, 0.16);
 }
 
 /* Floating Trigger Button (when minimized or for quick toggle in front of Dashboard) */
@@ -957,16 +959,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
     display: none;
     align-items: center;
     gap: 12px;
-    background: rgba(9, 14, 28, 0.94);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--cyan-neon);
+    background: linear-gradient(135deg, rgba(8, 15, 34, 0.96) 0%, rgba(22, 12, 48, 0.96) 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(0, 245, 196, 0.6);
     border-radius: 30px;
     padding: 10px 18px 10px 12px;
     color: #ffffff;
     cursor: pointer;
     z-index: 499;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 22px rgba(0, 240, 255, 0.35);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 245, 196, 0.35);
     transition: var(--transition);
 }
 
@@ -1273,22 +1275,26 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .btn-chat-send {
-    background: var(--cyan-neon);
+    background: linear-gradient(135deg, #00f5c4 0%, #38bdf8 50%, #a855f7 100%);
     border: none;
-    color: #050811;
+    color: #030611;
     padding: 10px 20px;
     border-radius: var(--radius-sm);
-    font-weight: 700;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    letter-spacing: 0.08em;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    box-shadow: 0 0 16px rgba(0, 245, 196, 0.4);
 }
 
 .btn-chat-send:hover {
-    box-shadow: 0 0 16px var(--cyan-glow);
-    transform: scale(1.02);
+    box-shadow: 0 0 24px rgba(0, 245, 196, 0.65);
+    transform: translateY(-1px);
 }
 
 /* ==========================================================================
@@ -2389,21 +2395,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* ── Neon Nebula Chat Messages Container ─────────────────────────────────── */
 .chat-messages {
   background:
-    radial-gradient(ellipse at 15% 85%, rgba(168, 85, 247, 0.05) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 70%),
-    linear-gradient(180deg, rgba(3, 7, 18, 0.97) 0%, rgba(5, 10, 22, 0.97) 100%);
+    radial-gradient(ellipse at 15% 85%, rgba(168, 85, 247, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(0, 245, 196, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(56, 189, 248, 0.04) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(3, 6, 16, 0.98) 0%, rgba(5, 10, 24, 0.98) 100%);
 }
 
 /* ── Holographic User Bubble ─────────────────────────────────────────────── */
 .user-bubble {
   position: relative;
-  background: linear-gradient(135deg, #1a0533 0%, #2d1052 50%, #160a3d 100%);
-  border: 1px solid rgba(168, 85, 247, 0.55);
+  background: linear-gradient(135deg, #180933 0%, #2b0f52 50%, #15082e 100%);
+  border: 1px solid rgba(168, 85, 247, 0.65);
   box-shadow:
-    0 0 20px rgba(168, 85, 247, 0.18),
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    inset 0 0 30px rgba(168, 85, 247, 0.04);
+    0 0 25px rgba(168, 85, 247, 0.22),
+    0 4px 18px rgba(0, 0, 0, 0.5),
+    inset 0 0 30px rgba(168, 85, 247, 0.06);
   border-radius: 16px 16px 4px 16px;
   padding: 10px 14px;
   overflow: hidden;
@@ -2412,7 +2418,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   content: '';
   position: absolute;
   top: 0; left: -60%; width: 40%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
   animation: shimmerUser 4s ease-in-out infinite;
   pointer-events: none;
 }
@@ -2424,12 +2430,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* ── Holographic Bot Bubble ──────────────────────────────────────────────── */
 .bot-bubble {
   position: relative;
-  background: linear-gradient(135deg, #050d1a 0%, #0a1628 60%, #061523 100%);
-  border: 1px solid rgba(0, 240, 255, 0.32);
+  background: linear-gradient(135deg, #050d1e 0%, #09172e 60%, #051121 100%);
+  border: 1px solid rgba(0, 245, 196, 0.38);
   box-shadow:
-    0 0 25px rgba(0, 240, 255, 0.1),
-    0 4px 16px rgba(0, 0, 0, 0.5),
-    inset 0 0 40px rgba(0, 240, 255, 0.025);
+    0 0 28px rgba(0, 245, 196, 0.14),
+    0 4px 18px rgba(0, 0, 0, 0.55),
+    inset 0 0 40px rgba(0, 245, 196, 0.035);
   border-radius: 16px 16px 16px 4px;
   padding: 10px 14px;
   overflow: hidden;
@@ -2440,8 +2446,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
   top: 0; left: -80%; width: 60%; height: 100%;
   background: linear-gradient(90deg,
     transparent,
-    rgba(0, 240, 255, 0.04),
-    rgba(168, 85, 247, 0.03),
+    rgba(0, 245, 196, 0.05),
+    rgba(168, 85, 247, 0.04),
     transparent);
   animation: auroraBot 6s ease-in-out infinite;
   pointer-events: none;
@@ -2458,12 +2464,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
   display: inline-block;
   width: 2px;
   height: 1em;
-  background: #00f0ff;
+  background: #00f5c4;
   margin-left: 2px;
   vertical-align: text-bottom;
   border-radius: 1px;
   animation: cursorBlink 0.7s ease-in-out infinite;
-  box-shadow: 0 0 6px #00f0ff;
+  box-shadow: 0 0 8px #00f5c4;
 }
 @keyframes cursorBlink {
   0%, 100% { opacity: 1; }
@@ -2472,7 +2478,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* ── Message Sender Labels ───────────────────────────────────────────────── */
 .msg-wrapper.bot .msg-sender {
-  background: linear-gradient(90deg, #00f0ff, #a855f7);
+  background: linear-gradient(90deg, #00f5c4, #a855f7);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
