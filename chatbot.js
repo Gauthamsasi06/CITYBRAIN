@@ -40,25 +40,22 @@ const CityBrainChatbot = {
     },
 
     // ── System Instruction (sent with every Gemini request) ──────────────────
-    SYSTEM_PROMPT: `You are CITYBRAIN AI ASSISTANT — an elite urban intelligence engine monitoring
-Chennai, India's smart city grid in real time.
+    SYSTEM_PROMPT: `You are CITYBRAIN AI — a fast, natural, highly intelligent conversational AI assistant powered by Google Gemini, dedicated to Chennai Smart City.
+You speak naturally, warmly, and directly just like Gemini, with deep real-time domain knowledge of Chennai's urban infrastructure, traffic, pollution, water resources, and power grid.
 
-Your personality: precise, futuristic, slightly dramatic — like a mission control operator.
-Keep responses concise but rich (use bullet lists and bold text freely).
-You know everything about Chennai's traffic, pollution (AQI), water reservoirs,
-electricity grid, and urban infrastructure.
+Key Chennai Context:
+• City: Chennai, Tamil Nadu, India (population ~11.5M metro).
+• Traffic: 68% average congestion; key corridors include Anna Salai, GST Road, OMR (IT expressway), Kathipara / Guindy, and T. Nagar.
+• Air Quality (AQI): Baseline ~142 (Moderate). Industrial/freight zones (Koyambedu, Port, Guindy) are higher; coastal zones (Adyar, Besant Nagar) are cleaner.
+• Water: 985 MLD daily demand vs 1,050 MLD supply; reservoirs: Chembarambakkam (85%), Poondi (76%), Red Hills, Cholavaram; Minjur & Nemmeli desalination plants.
+• Electricity: 3,920 MW peak demand against 4,500 MW grid capacity (TANGEDCO).
+• Urban Infrastructure: Health score ~74/100; active investments in Metro Phase 2, smart signals, and stormwater drainage.
 
-Key facts you always know:
-• City: Chennai, Tamil Nadu, India — population 11.5 million (metro)
-• Traffic congestion baseline: 68% citywide, worst at T. Nagar (88%), Guindy (84%)
-• AQI baseline: 142 (Moderate). Worst: Koyambedu (175), Port (182). Best: Adyar (98)
-• Water: 985 MLD demand, 1050 MLD supply. Reservoirs: Chembarambakkam 85%, Poondi 76%
-• Electricity: 3,920 MW demand vs 4,500 MW grid cap (TANGEDCO). 13% reserve margin
-• Infrastructure health: 74/100. Worst sub-sector: Stormwater Drainage (58/100)
-
-Answer questions about the city warmly and intelligently.
-When users ask what-if scenarios, compute approximate impacts using common sense ratios.
-Always label simulation outputs as "illustrative projections" not verified forecasts.`,
+Guidelines:
+1. Respond immediately, naturally, and conversationally. Avoid robotic formulas or unnecessary filler.
+2. Structure answers cleanly with Markdown, bullet points, and bold text when explaining complex city data.
+3. For what-if scenarios or simulations, give clear, realistic projections and practical urban planning insights.
+4. If asked general or conversational questions, converse naturally and fluidly like Google Gemini.`,
 
     // ── Welcome message ───────────────────────────────────────────────────────
     WELCOME: "🌐 **CITYBRAIN NEURAL CORE ONLINE**\n\nI'm your AI copilot for Chennai's smart city grid. Ask me anything — traffic forecasts, pollution hotspots, water reserves, what-if simulations, or just a natural conversation.\n\n*Configure a free Gemini API key above to unlock full AI mode with streaming responses!*",
@@ -353,7 +350,7 @@ Always label simulation outputs as "illustrative projections" not verified forec
     },
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  GEMINI STREAMING API
+    //  GEMINI STREAMING API (Ultra-low latency, natural output)
     // ─────────────────────────────────────────────────────────────────────────
     async streamGeminiResponse(userText) {
         this.isStreaming = true;
@@ -365,13 +362,16 @@ Always label simulation outputs as "illustrative projections" not verified forec
                 parts: [{ text: h.text }]
             })),
             generationConfig: {
-                temperature: 0.8,
+                temperature: 0.7,
                 topP: 0.95,
-                maxOutputTokens: 1024
+                maxOutputTokens: 1500,
+                thinkingConfig: {
+                    thinkingBudget: 0
+                }
             }
         };
 
-        const response = await fetch(this.ENDPOINT, {
+        let response = await fetch(this.ENDPOINT, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",
@@ -379,6 +379,19 @@ Always label simulation outputs as "illustrative projections" not verified forec
             },
             body: JSON.stringify(payload)
         });
+
+        // If thinkingConfig is not recognized by a specific endpoint/model, retry without it
+        if (!response.ok && payload.generationConfig?.thinkingConfig) {
+            delete payload.generationConfig.thinkingConfig;
+            response = await fetch(this.ENDPOINT, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": this.config.apiKey
+                },
+                body: JSON.stringify(payload)
+            });
+        }
 
         if (!response.ok) {
             const errJson = await response.json().catch(() => ({}));
@@ -415,7 +428,12 @@ Always label simulation outputs as "illustrative projections" not verified forec
 
                     try {
                         const json  = JSON.parse(raw);
-                        const chunk = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+                        const parts = json?.candidates?.[0]?.content?.parts || [];
+                        let chunk = "";
+                        for (const p of parts) {
+                            if (p.thought) continue; // Skip raw internal thinking tokens
+                            if (p.text) chunk += p.text;
+                        }
                         if (chunk) {
                             fullText += chunk;
                             bubble.innerHTML = this.formatMarkdown(fullText) + '<span class="stream-cursor"></span>';
@@ -439,7 +457,7 @@ Always label simulation outputs as "illustrative projections" not verified forec
     //  OFFLINE ENGINE (keyword + intent)
     // ─────────────────────────────────────────────────────────────────────────
     async offlineEngine(text) {
-        await new Promise(r => setTimeout(r, 380));
+        await new Promise(r => setTimeout(r, 60));
         const t = text.toLowerCase();
         const base = window.CITY_DATA?.baseline || {};
         const zones = window.CITY_DATA?.zones || [];
@@ -516,7 +534,7 @@ Always label simulation outputs as "illustrative projections" not verified forec
 
         await new Promise(resolve => {
             const iv = setInterval(() => {
-                i = Math.min(i + 6, text.length);
+                i = Math.min(i + 14, text.length);
                 bubble.innerHTML = this.formatMarkdown(text.substring(0, i)) + '<span class="stream-cursor"></span>';
                 this.scrollToBottom();
                 if (i >= text.length) {
@@ -580,7 +598,7 @@ Always label simulation outputs as "illustrative projections" not verified forec
             ind.className = "chat-typing-indicator";
             ind.innerHTML = `
                 <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
-                <span class="typing-text">CityBrain AI is thinking...</span>`;
+                <span class="typing-text">CityBrain AI is responding...</span>`;
             container.appendChild(ind);
         }
         ind.style.display = "flex";
